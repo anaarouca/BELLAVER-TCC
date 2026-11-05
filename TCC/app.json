@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "Bellaver",
+    "slug": "Bellaver",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/Img/adaptive-icon.png",
+    "scheme": "bellaver",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "icon": "./assets/expo.icon"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/Img/logoSemFundo.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anaarouca.Bellaver"
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#208AEF",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 76
+        }
+      ],
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "215dccbb-8ad0-40ac-b61e-7c4cc34ac1bc"
+      }
+    }
+  }
+}
