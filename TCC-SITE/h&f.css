@@ -1,0 +1,278 @@
+/*   Header & Footer   */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: white;
+    color: #111;
+}
+
+
+/* =========================
+   CABEÇALHO
+========================= */
+
+header {
+    height: 110px;
+    background-color: #000;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo {
+    height: 110px;
+    max-width: 220px;
+    object-fit: contain;
+}
+
+.logo span {
+    display: none;
+}
+
+
+
+
+
+
+
+
+
+
+/* =========================
+   RODAPÉ
+========================= */
+
+footer {
+    width: calc(100% - 8px);
+    max-width: none;
+    min-height: 213px;
+    margin: 0 auto;
+    padding: 30px 10% 15px;
+    box-sizing: border-box;
+    background-color: #eeeeee;
+    display: flex;
+    align-items: flex-start;
+    font-family: Arial, sans-serif;
+    color: #555;
+}
+
+.footer-conteudo {
+    width: 100%;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.5fr repeat(3, minmax(0, 1fr));
+    align-items: flex-start;
+}
+
+.footer-coluna {
+    min-width: 0;
+}
+
+.footer-coluna h3 {
+    margin: 0 0 10px;
+    font-size: 18px;
+    font-weight: normal;
+    color: #333;
+}
+
+.footer-coluna p {
+    width: auto;
+    margin: 3px 0;
+    font-size: 15px;
+    color: #555;
+    line-height: 1.5;
+}
+
+.footer-coluna p > i {
+    width: 20px;
+    margin-right: 4px;
+    font-size: 19px;
+    text-align: center;
+	color: #555;
+}
+
+.footer-coluna a {
+	color: #555;
+    text-decoration: none;
+}
+
+.footer-coluna a:hover {
+    color: #555;
+}
+
+
+/* Logo VERLANI */
+
+.logo-footer {
+    max-width: 100%;
+}
+
+.verlanI {
+    width: 90px;
+    height: auto;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.logo-footer p {
+    width: 100%;
+    max-width: 300px;
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+
+/* Redes */
+
+.redes {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 5px !important;
+}
+
+.social-link {
+    color: #555;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    font-size: 27px;
+    transition: color 0.3s, transform 0.3s;
+}
+
+.social-link:hover,
+.social-link:focus-visible {
+    color: #222;
+    transform: translateY(-2px);
+}
+
+
+/* =========================
+   COPYRIGHT
+========================= */
+
+.copyright {
+    position: relative;
+    width: calc(100% - 8px);
+    height: 42px;
+    margin: 0 auto;
+    border-top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    background-color: #eeeeee;
+    color: #888;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+}
+
+.copyright::before {
+    position: absolute;
+    top: 0;
+    left: 24px;
+    right: 24px;
+    border-top: 1px solid #c8c8c8;
+    content: "";
+}
+
+
+/* =========================
+   RESPONSIVIDADE
+========================= */
+
+@media (max-width: 900px) {
+    .footer-conteudo {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 28px 40px;
+    }
+
+    .banner {
+        height: 300px;
+    }
+
+    .app {
+        width: 90%;
+    }
+
+    .recursos {
+        width: 90%;
+        gap: 20px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    footer {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+
+@media (max-width: 600px) {
+    header {
+        height: 82px;
+    }
+
+    .logo {
+        height: 82px;
+        max-width: min(180px, 80vw);
+    }
+
+    footer {
+        padding: 28px 24px;
+    }
+
+    .footer-conteudo {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .logo-footer p {
+        max-width: 260px;
+    }
+
+    .banner {
+        grid-template-columns: repeat(2, 1fr);
+
+        height: 400px;
+    }
+
+    .app {
+        flex-direction: column;
+        margin: 80px auto 48px;
+        gap: 30px;
+    }
+
+    .linha {
+        display: none;
+    }
+
+    .recursos {
+        grid-template-columns: 1fr;
+    }
+
+    .bellahope {
+        padding: 40px 25px;
+    }
+
+    .bellahope h1 {
+        font-size: 28px;
+    }
+
+    .bellahope h2 {
+        font-size: 25px;
+    }
+
+    footer {
+        grid-template-columns: 1fr;
+    }
+
+}

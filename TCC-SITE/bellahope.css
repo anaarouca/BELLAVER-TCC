@@ -1,0 +1,500 @@
+html,
+body {
+	min-height: 100%;
+}
+
+body {
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+	background: #f3f2f1;
+	color: #111;
+	font-family: Arial, Helvetica, sans-serif;
+}
+
+main {
+	flex: 1;
+}
+
+.banner-tcc {
+	width: 100%;
+	background: #ffffff;
+	padding: 0;
+}
+
+.banner-tcc > img:first-child {
+	display: block;
+	width: 100%;
+	height: auto;
+	object-fit: cover;
+}
+
+.frase-bellahope {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	width: min(1500px, 94vw);
+	margin: 0 auto;
+	padding: 188px 0 184px;
+}
+
+.linha {
+	display: block;
+	font-family: "Inter", sans-serif;
+	font-size: clamp(30px, 3.6vw, 88px);
+	font-weight: 100;
+	font-style: italic;
+	line-height: 1.18;
+	letter-spacing: -0.09em;
+	text-transform: uppercase;
+	color: rgba(17, 17, 17, 0.96);
+}
+
+.linha-1 {
+	transform: translateX(-82px);
+}
+
+.linha-2 {
+	transform: translateX(82px);
+}
+
+.bellahope-intro {
+	width: 100%;
+	padding: 54px 20px 80px;
+	border-top: 1px solid rgba(17, 17, 17, 0.3);
+	border-bottom: 1px solid rgba(17, 17, 17, 0.3);
+	text-align: center;
+}
+
+.titulo-bellahope {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 26px;
+	margin-bottom: 28px;
+}
+
+.linha-lateral {
+	display: block;
+	width: 110px;
+	height: 1px;
+	background: rgba(17, 17, 17, 0.7);
+}
+
+.titulo-bellahope h2 {
+	margin: 0;
+	font-family: "Inter", sans-serif;
+	font-size: clamp(22px, 2.2vw, 36px);
+	font-weight: 250;
+	letter-spacing: 5px;
+	text-transform: uppercase;
+	color: #111;
+}
+
+.subtitulo-bellahope {
+	margin: 0;
+	padding-top: 38px;
+	padding-bottom: 38px;
+	font-family: "Inter", sans-serif;
+	font-size: clamp(22px, 2vw, 34px);
+	font-style: italic;
+	font-weight: 300;
+	line-height: 1.3;
+	color: rgba(17, 17, 17, 0.9);
+}
+
+.botao-bellahope {
+	display: inline-block;
+	margin-top: 28px;
+	padding: 18px 34px;
+	background: #111;
+	color: #fff;
+	text-decoration: none;
+	font-family: "Inter", sans-serif;
+	font-size: clamp(15px, 1.3vw, 22px);
+	font-weight: 100;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.bellahope-sobre {
+	display: grid;
+	grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+	align-items: center;
+	gap: clamp(40px, 7vw, 88px);
+	width: 100%;
+	box-sizing: border-box;
+	padding: 110px max(8vw, calc((100% - 1100px) / 2));
+	background: #fff;
+}
+
+.bellahope-sobre-imagem {
+	display: block;
+	width: 100%;
+	aspect-ratio: 4 / 5;
+	object-fit: cover;
+	filter: grayscale(100%);
+}
+
+.bellahope-sobre-conteudo {
+	text-align: center;
+}
+
+.bellahope-sobre-conteudo h2 {
+	margin: 0 0 36px;
+	font-family: "Inter", sans-serif;
+	font-size: clamp(26px, 3vw, 38px);
+	font-style: italic;
+	font-weight: 300;
+	line-height: 1.2;
+}
+
+.bellahope-sobre-conteudo p {
+	margin: 0;
+	font-family: "Inter", sans-serif;
+	font-size: clamp(17px, 1.8vw, 20px);
+	font-weight: 300;
+	line-height: 1.3;
+}
+
+.bellahope-sobre-conteudo p + p {
+	margin-top: 4px;
+}
+
+.bellahope-etapas {
+	width: 100%;
+	box-sizing: border-box;
+	padding: 40px max(8vw, calc((100% - 1100px) / 2)) 88px;
+	background: #fff;
+}
+
+.bellahope-etapas > h2 {
+	margin: 0 0 54px;
+	font-family: "Inter", sans-serif;
+	font-size: clamp(28px, 3vw, 38px);
+	font-style: italic;
+	font-weight: 300;
+	text-align: center;
+}
+
+.bellahope-etapas-lista {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: clamp(28px, 7.5vw, 96px);
+}
+
+.bellahope-etapa {
+	min-height: 255px;
+	box-sizing: border-box;
+	padding: 28px 18px;
+	border: 1px solid #ddd;
+	background: #f3f2f1;
+	text-align: center;
+}
+
+.bellahope-etapa h3 {
+	margin: 0 0 20px;
+	font-family: "Inter", sans-serif;
+	font-size: clamp(18px, 1.7vw, 21px);
+	font-weight: 520;
+	line-height: 1.2;
+}
+
+.bellahope-etapa p {
+	margin: 0;
+	font-family: "Inter", sans-serif;
+	font-size: clamp(17px, 1.7vw, 20px);
+	font-weight: 300;
+	line-height: 1.3;
+}
+
+.bellahope-impacto {
+	display: grid;
+	grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+	align-items: start;
+	gap: clamp(32px, 5vw, 64px);
+	width: 100%;
+	box-sizing: border-box;
+	padding: 72px 4vw 88px;
+	background: #fff;
+}
+
+.bellahope-impacto-conteudo h2 {
+	margin: 0;
+	font-family: "Inter", sans-serif;
+	font-size: clamp(30px, 3.3vw, 40px);
+	font-style: italic;
+	font-weight: 300;
+	line-height: 1.2;
+	text-align: center;
+}
+
+.bellahope-impacto-subtitulo {
+	max-width: 440px;
+	margin: 8px auto 140px;
+	font-family: "Inter", sans-serif;
+	font-size: clamp(23px, 2.5vw, 30px);
+	font-style: italic;
+	font-weight: 300;
+	line-height: 1.25;
+	text-align: center;
+}
+
+.bellahope-causas {
+	display: grid;
+	gap: 74px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.bellahope-causas h3 {
+	margin: 0 0 6px;
+	font-family: "Inter", sans-serif;
+	font-size: 20px;
+	font-weight: 400;
+}
+
+.bellahope-causas p {
+	margin: 0;
+	font-family: "Inter", sans-serif;
+	font-size: clamp(16px, 1.7vw, 19px);
+	font-weight: 300;
+	line-height: 1.35;
+}
+
+.bellahope-impacto-imagem {
+	display: block;
+	width: 100%;
+	height: auto;
+	object-fit: cover;
+}
+
+.bellahope-legado {
+	width: 96%;
+	box-sizing: border-box;
+	margin: 16px auto 20px;
+	padding: 120px 5vw 100px;
+	border-top: 1px solid #ccc;
+	border-bottom: 1px solid #ccc;
+	background: #fff;
+	text-align: center;
+}
+
+.bellahope-legado h2 {
+	max-width: 1000px;
+	margin: 0 auto 28px;
+	font-family: "Inter", sans-serif;
+	font-size: clamp(32px, 4.3vw, 52px);
+	font-style: italic;
+	font-weight: 300;
+	line-height: 1.18;
+}
+
+.bellahope-legado h2 span {
+	display: block;
+}
+
+.bellahope-legado p {
+	margin: 0;
+	font-family: "Inter", sans-serif;
+	font-size: clamp(21px, 2.2vw, 28px);
+	font-style: italic;
+	font-weight: 300;
+	line-height: 1.25;
+}
+
+.bellahope-resultados {
+	display: grid;
+	gap: 64px;
+	width: 96%;
+	box-sizing: border-box;
+	margin: 0 auto 20px;
+	padding: 56px 24px 84px;
+	border-bottom: 1px solid #bbb;
+	background: #fff;
+	text-align: center;
+}
+
+.bellahope-resultado h2 {
+	margin: 0 0 6px;
+	font-family: "Inter", sans-serif;
+	font-size: clamp(34px, 4vw, 44px);
+	font-weight: 400;
+	line-height: 1.15;
+}
+
+.bellahope-resultado p {
+	margin: 0;
+	font-family: "Inter", sans-serif;
+	font-size: clamp(17px, 1.8vw, 20px);
+	font-weight: 300;
+	line-height: 1.3;
+}
+
+.bellahope-closet {
+	display: grid;
+	grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.95fr);
+	align-items: start;
+	gap: clamp(24px, 4vw, 48px);
+	width: 100%;
+	box-sizing: border-box;
+	padding: 64px 4vw 88px;
+	background: #fff;
+}
+
+.bellahope-closet-conteudo {
+	padding-top: 80px;
+	text-align: center;
+}
+
+.bellahope-closet-titulo {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 24px;
+}
+
+.bellahope-closet-titulo span {
+	width: 56px;
+	height: 1px;
+	background: #999;
+}
+
+.bellahope-closet-titulo h2 {
+	margin: 0;
+	font-family: "Inter", sans-serif;
+	font-size: clamp(22px, 2.2vw, 36px);
+	font-weight: 250;
+	letter-spacing: 5px;
+	text-transform: uppercase;
+	color: #111;
+}
+
+.bellahope-closet-conteudo > p {
+	margin: clamp(64px, 8vw, 100px) 0 clamp(56px, 7vw, 82px);
+	font-family: "Inter", sans-serif;
+	font-size: clamp(22px, 2.5vw, 30px);
+	font-style: italic;
+	font-weight: 300;
+	line-height: 1.25;
+}
+
+.bellahope-closet .botao-bellahope {
+	margin-top: 0;
+	font-style: italic;
+}
+
+.bellahope-closet-imagem {
+	display: block;
+	width: 100%;
+	max-width: 600px;
+	height: auto;
+	object-fit: cover;
+	justify-self: center;
+}
+
+footer {
+	margin-top: auto;
+}
+
+@media (max-width: 800px) {
+	.frase-bellahope {
+		width: 90vw;
+		padding: 88px 0;
+	}
+
+	.linha-1,
+	.linha-2 {
+		transform: none;
+	}
+
+	.bellahope-intro {
+		padding: 42px 16px 56px;
+	}
+
+	.titulo-bellahope {
+		gap: 10px;
+	}
+
+	.linha-lateral {
+		width: clamp(24px, 8vw, 48px);
+	}
+
+	.titulo-bellahope h2 {
+		font-size: clamp(20px, 5vw, 30px);
+		letter-spacing: clamp(1px, 1vw, 4px);
+	}
+
+	.subtitulo-bellahope {
+		padding-top: 24px;
+		padding-bottom: 24px;
+		font-size: clamp(20px, 4.5vw, 28px);
+	}
+
+	.bellahope-sobre {
+		grid-template-columns: 1fr;
+		gap: 36px;
+		padding: 82px 8vw;
+	}
+
+	.bellahope-sobre-conteudo h2 {
+		margin-bottom: 24px;
+	}
+
+	.bellahope-etapas {
+		padding: 48px 8vw 64px;
+	}
+
+	.bellahope-etapas > h2 {
+		margin-bottom: 32px;
+	}
+
+	.bellahope-etapas-lista {
+		grid-template-columns: 1fr;
+		gap: 20px;
+	}
+
+	.bellahope-etapa {
+		min-height: 0;
+		padding: 28px 22px;
+	}
+
+	.bellahope-impacto {
+		grid-template-columns: 1fr;
+		gap: 36px;
+		padding: 56px 8vw 72px;
+	}
+
+	.bellahope-legado {
+		padding: 72px 6vw 64px;
+	}
+
+	.bellahope-resultados {
+		gap: 48px;
+		padding: 48px 16px 64px;
+	}
+
+	.bellahope-closet {
+		grid-template-columns: 1fr;
+		gap: 36px;
+		padding: 56px 8vw 72px;
+	}
+
+	.bellahope-closet-conteudo {
+		padding-top: 0;
+	}
+
+	.bellahope-closet-conteudo > p {
+		margin: 52px 0 44px;
+	}
+
+	.bellahope-closet-imagem {
+		width: min(100%, 520px);
+		justify-self: center;
+	}
+
+	.bellahope-legado h2 span {
+		display: inline;
+	}
+}

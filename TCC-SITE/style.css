@@ -1,0 +1,276 @@
+
+
+
+/* =========================
+   BANNER
+========================= */
+
+/* Galeria de Imagens */
+.primeirocr {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border: none;
+}
+
+.car {
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.cr {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+    height: clamp(320px, 68vw, 950px);
+}
+
+.carrossel1 {
+  width: 100%;
+  display: flex;
+  overflow: hidden;
+}
+
+.cImg2 {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+/* =========================
+   ÁREA DO APP
+========================= */
+
+.app {
+    width: 70%;
+
+    margin: 130px auto 60px;
+
+    min-height: 390px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 45px;
+}
+
+
+/* Vídeo */
+
+.video {
+    width: min(100%, 380px);
+
+    display: flex;
+    justify-content: center;
+}
+
+.video-caixa {
+    width: min(100%, 380px);
+    height: auto;
+    aspect-ratio: 21 / 37;
+
+    border: none;
+    display: block;
+    object-fit: contain;
+}
+
+
+/* Linha vertical */
+
+.linha {
+    width: 1px;
+    height: 175px;
+
+    background-color: #999;
+}
+
+
+/* Texto do app */
+
+.app-texto {
+    width: min(100%, 330px);
+}
+
+.app-texto h3 {
+    font-size: 20px;
+
+    font-weight: normal;
+
+    margin-bottom: 25px;
+}
+
+.app-texto p {
+    font-size: 18px;
+
+    line-height: 1.4;
+
+    margin-bottom: 38px;
+}
+
+button {
+    border: none;
+
+    background-color: #000;
+    color: white;
+
+    padding: 14px 40px;
+
+    font-size: 14px;
+
+    cursor: pointer;
+
+    transition: 0.3s;
+}
+
+button:hover {
+    background-color: #444;
+}
+
+
+/* =========================
+   SEPARADOR
+========================= */
+
+.separador {
+    width: 94%;
+
+    height: 1px;
+
+    background-color: #ccc;
+
+    margin: 0 auto 80px;
+}
+
+
+/* =========================
+   CARDS
+========================= */
+
+.recursos {
+    width: min(90%, 1200px);
+
+    margin: 0 auto 100px;
+
+    display: grid;
+
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+
+    gap: clamp(20px, 3vw, 40px);
+}
+
+.card {
+    
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    padding: 28px 25px;
+    text-align: center;
+    width: 100%;
+    min-height: 250px;
+    height: auto;
+}
+
+.card h2 {
+    font-size: 18px;
+
+    font-weight: normal;
+
+    line-height: 1.3;
+
+    margin-bottom: 30px;
+}
+
+.card p {
+    color: #999;
+
+    font-size: 16px;
+
+    line-height: 1.25;
+}
+
+
+/* =========================
+   BELL AHOPE
+========================= */
+
+.bellahope {
+    width: 100%;
+    min-height: 360px;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    padding: 0;
+}
+
+.bellahope-conteudo {
+    width: 100%;
+    margin: 0;
+    padding: 80px 0 80px 5%;
+    background-image: url("imgs/banner.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.bellahope h1 {
+    font-family: Georgia, "Times New Roman", serif;
+
+    font-size: 36px;
+
+    margin-bottom: 5px;
+}
+
+.bellahope h2 {
+    font-family: Georgia, "Times New Roman", serif;
+
+    font-style: italic;
+
+    font-weight: normal;
+
+    font-size: 32px;
+
+    margin-bottom: 30px;
+}
+
+.nome-bellahope {
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    font-size: 16px;
+
+    letter-spacing: 5px;
+
+    margin-bottom: 25px;
+}
+
+.nome-bellahope span {
+    width: 48px;
+    height: 1px;
+
+    background-color: #777;
+}
+
+.bellahope p {
+    font-size: 17px;
+
+    line-height: 1.35;
+
+    margin-bottom: 25px;
+}
+
+.bellahope button {
+    font-size: 13px;
+
+    padding: 15px 32px;
+}
+
+
