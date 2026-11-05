@@ -412,7 +412,7 @@ footer,
 
 
 
-.imagem-final {
+.imagem-final1 {
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -433,7 +433,7 @@ footer,
     height: 95px;
 }
 
-.imagem-final img {
+.imagem-final1 img {
 	width: min(760px, 90%);
 	height: auto;
 	aspect-ratio: 76 / 35;
@@ -443,7 +443,7 @@ footer,
     border: 1px solid #999;
 }
 
-.imagem-final p {
+.imagem-final1 p {
     margin: 18px 0 60px;
     font-size: 14px;
     line-height: 1.4;

@@ -1,3 +1,4 @@
+import { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -6,12 +7,15 @@ import {
   TouchableOpacity,
   StyleSheet,
   StatusBar,
+  Alert,
+  ImageSourcePropType,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useFavoritos } from '../hooks/useFavoritos';
+import { listarProdutosCadastrados } from '../data/produtosCadastrados';
 
-const produtos = [
+const produtosFixos = [
   {
     id: '1',
     nome: 'Blusa em organza de seda Branco',
@@ -84,14 +88,73 @@ const produtos = [
   },
 ];
 
+type ProdutoCatalogo = {
+  id: string;
+  nome: string;
+  original: string;
+  preco: string;
+  imagem: ImageSourcePropType;
+  cadastrado: boolean;
+};
+
+function formatarPreco(preco: string): string {
+  return `R$ ${preco.replace(/^R\$\s*/i, '').trim()}`;
+}
+
 export default function CatalogoScreen() {
   const { favoritos, alternarFavorito } = useFavoritos();
+  const [produtosCadastrados, setProdutosCadastrados] = useState<
+    Awaited<ReturnType<typeof listarProdutosCadastrados>>
+  >([]);
 
-  function abrirProduto(id: string) {
+  useFocusEffect(
+    useCallback(() => {
+      let ativo = true;
+
+      listarProdutosCadastrados()
+        .then((produtos) => {
+          if (ativo) {
+            setProdutosCadastrados(produtos);
+          }
+        })
+        .catch((erro: unknown) => {
+          console.error('Erro ao carregar produtos cadastrados:', erro);
+          Alert.alert(
+            'Erro ao carregar catálogo',
+            erro instanceof Error
+              ? erro.message
+              : 'Não foi possível carregar os produtos cadastrados.'
+          );
+        });
+
+      return () => {
+        ativo = false;
+      };
+    }, [])
+  );
+
+  const produtos: ProdutoCatalogo[] = [
+    ...produtosFixos.map((produto) => ({ ...produto, cadastrado: false })),
+    ...produtosCadastrados.map((produto) => ({
+      id: produto.id,
+      nome: produto.nome,
+      original: formatarPreco(produto.precoOriginal),
+      preco: formatarPreco(produto.precoDesconto),
+      imagem: { uri: produto.imagens[0] },
+      cadastrado: true,
+    })),
+  ];
+
+  function abrirProduto(id: string, cadastrado = false) {
+    if (cadastrado) {
+      router.push({ pathname: '/produto2', params: { id } });
+      return;
+    }
+
     router.push({
-      pathname: '/Produtos',
+      pathname: '/produto1',
       params: { id },
-    } as any);
+    });
   }
 
   return (
@@ -134,14 +197,11 @@ export default function CatalogoScreen() {
               <TouchableOpacity
                 style={styles.areaImagem}
                 activeOpacity={0.8}
-                onPress={() => abrirProduto(produto.id)}
+                onPress={() => abrirProduto(produto.id, produto.cadastrado)}
               >
                 <Image
                   source={produto.imagem}
-                  style={[
-                    styles.imagemProduto,
-                    { filter: 'grayscale(100%)' } as any,
-                  ]}
+                  style={styles.imagemProduto}
                   resizeMode="cover"
                 />
               </TouchableOpacity>
@@ -149,7 +209,7 @@ export default function CatalogoScreen() {
               <View style={styles.linhaNome}>
                 <TouchableOpacity
                   style={styles.nomeClicavel}
-                  onPress={() => abrirProduto(produto.id)}
+                  onPress={() => abrirProduto(produto.id, produto.cadastrado)}
                 >
                   <Text style={styles.nomeProduto}>
                     {produto.nome}
@@ -172,7 +232,9 @@ export default function CatalogoScreen() {
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity onPress={() => abrirProduto(produto.id)}>
+              <TouchableOpacity
+                onPress={() => abrirProduto(produto.id, produto.cadastrado)}
+              >
                 <Text style={styles.precoOriginal}>
                   {produto.original}
                 </Text>

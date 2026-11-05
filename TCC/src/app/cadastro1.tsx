@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import {
   View,
@@ -22,13 +21,8 @@ import { auth } from '../firebaseConfig';
 
 export default function CadastroScreen() {
   const [nome, setNome] = useState('');
-  const [sobrenome, setSobrenome] = useState('');
   const [email, setEmail] = useState('');
-  const [telefone, setTelefone] = useState('');
-  const [rua, setRua] = useState('');
-  const [bairro, setBairro] = useState('');
-  const [cidade, setCidade] = useState('');
-  const [estado, setEstado] = useState('');
+  const [confirmarEmail, setConfirmarEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [carregando, setCarregando] = useState(false);
@@ -74,17 +68,17 @@ export default function CadastroScreen() {
 
     if (
       !nome.trim() ||
-      !sobrenome.trim() ||
       !email.trim() ||
-      !telefone.trim() ||
-      !rua.trim() ||
-      !bairro.trim() ||
-      !cidade.trim() ||
-      !estado.trim() ||
+      !confirmarEmail.trim() ||
       !senha ||
       !confirmarSenha
     ) {
       Alert.alert('Atenção', 'Preencha todos os campos.');
+      return;
+    }
+
+    if (email.trim().toLowerCase() !== confirmarEmail.trim().toLowerCase()) {
+      Alert.alert('Atenção', 'Os e-mails não coincidem.');
       return;
     }
 
@@ -108,7 +102,7 @@ export default function CadastroScreen() {
       );
 
       await updateProfile(resultado.user, {
-        displayName: `${nome.trim()} ${sobrenome.trim()}`,
+        displayName: nome.trim(),
       });
 
       Alert.alert(
@@ -153,28 +147,25 @@ export default function CadastroScreen() {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.label}>Nome</Text>
+        <Text style={styles.titulo}>CRIAR CONTA</Text>
+        <Text style={styles.subtitulo}>
+          Preencha seus dados para fazer parte da Bellaver.
+        </Text>
+
+        <Text style={styles.label}>Nome completo</Text>
         <TextInput
           style={styles.input}
-          placeholder="Digite Seu Nome.."
+          placeholder="Digite seu nome completo"
           placeholderTextColor="#888888"
           value={nome}
           onChangeText={setNome}
-        />
-
-        <Text style={styles.label}>Sobrenome</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Digite Seu Sobrenome.."
-          placeholderTextColor="#888888"
-          value={sobrenome}
-          onChangeText={setSobrenome}
+          autoCapitalize="words"
         />
 
         <Text style={styles.label}>E-mail</Text>
         <TextInput
           style={styles.input}
-          placeholder="Digite Seu E-mail.."
+          placeholder="Digite seu e-mail"
           placeholderTextColor="#888888"
           value={email}
           onChangeText={setEmail}
@@ -183,56 +174,22 @@ export default function CadastroScreen() {
           autoCorrect={false}
         />
 
-        <Text style={styles.label}>Telefone Celular</Text>
+        <Text style={styles.label}>Confirmar e-mail</Text>
         <TextInput
           style={styles.input}
-          placeholder="Digite Seu Celular.."
+          placeholder="Digite seu e-mail novamente"
           placeholderTextColor="#888888"
-          value={telefone}
-          onChangeText={setTelefone}
-          keyboardType="phone-pad"
-        />
-
-        <Text style={styles.label}>Rua</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Digite Sua Rua.."
-          placeholderTextColor="#888888"
-          value={rua}
-          onChangeText={setRua}
-        />
-
-        <Text style={styles.label}>Bairro</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Digite Seu Bairro.."
-          placeholderTextColor="#888888"
-          value={bairro}
-          onChangeText={setBairro}
-        />
-
-        <Text style={styles.label}>Cidade</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Digite Sua Cidade.."
-          placeholderTextColor="#888888"
-          value={cidade}
-          onChangeText={setCidade}
-        />
-
-        <Text style={styles.label}>Estado</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Digite Seu Estado.."
-          placeholderTextColor="#888888"
-          value={estado}
-          onChangeText={setEstado}
+          value={confirmarEmail}
+          onChangeText={setConfirmarEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
         />
 
         <Text style={styles.label}>Senha</Text>
         <TextInput
           style={styles.input}
-          placeholder="Digite Sua Senha..."
+          placeholder="Digite sua senha"
           placeholderTextColor="#888888"
           value={senha}
           onChangeText={setSenha}
@@ -240,10 +197,10 @@ export default function CadastroScreen() {
           autoCapitalize="none"
         />
 
-        <Text style={styles.label}>Confirmar Senha</Text>
+        <Text style={styles.label}>Confirmar senha</Text>
         <TextInput
           style={styles.input}
-          placeholder="Digite Sua Senha Novamente..."
+          placeholder="Digite sua senha novamente"
           placeholderTextColor="#888888"
           value={confirmarSenha}
           onChangeText={setConfirmarSenha}
@@ -261,13 +218,15 @@ export default function CadastroScreen() {
           </Text>
         </TouchableOpacity>
 
-        <View style={styles.linha} />
-
         {erroCadastro !== '' && (
           <Text style={styles.mensagemErro}>
             {erroCadastro}
           </Text>
         )}
+
+        <View style={styles.linha} />
+
+        <Text style={styles.textoSocial}>Ou cadastre-se com</Text>
 
         <View style={styles.redesSociais}>
           <TouchableOpacity
@@ -297,38 +256,36 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-
   pagina: {
     flexGrow: 1,
     paddingHorizontal: 22,
-    paddingTop: 55,
+    paddingTop: 45,
     paddingBottom: 25,
+    alignItems: 'center',
   },
-
   cabecalho: {
     alignItems: 'center',
-    marginBottom: 45,
+    marginBottom: 30,
   },
-
   logo: {
     color: '#000000',
     fontSize: 30,
     fontWeight: '300',
     letterSpacing: 7,
   },
-
   estabelecimento: {
     color: '#000000',
     fontSize: 12,
     marginTop: 8,
   },
-
   card: {
+    width: '100%',
+    maxWidth: 480,
     borderWidth: 1,
     borderColor: '#111111',
     borderRadius: 3,
-    paddingHorizontal: 16,
-    paddingTop: 19,
+    paddingHorizontal: 22,
+    paddingTop: 25,
     paddingBottom: 25,
     backgroundColor: '#FFFFFF',
     elevation: 3,
@@ -337,103 +294,109 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 3,
   },
-
+  titulo: {
+    color: '#111111',
+    fontSize: 17,
+    fontWeight: '400',
+    textAlign: 'center',
+    letterSpacing: 3,
+  },
+  subtitulo: {
+    color: '#777777',
+    fontSize: 11,
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 24,
+  },
   label: {
     color: '#111111',
-    fontSize: 14,
-    marginBottom: 5,
+    fontSize: 13,
+    marginBottom: 6,
   },
-
   input: {
-    height: 42,
+    height: 43,
     backgroundColor: '#EEEEEE',
     borderWidth: 1,
-    borderColor: '#111111',
+    borderColor: '#BBBBBB',
     borderRadius: 3,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 0,
-    fontSize: 11,
+    fontSize: 12,
     color: '#000000',
-    marginBottom: 12,
+    marginBottom: 16,
   },
-
   botao: {
     backgroundColor: '#000000',
-    width: 109,
-    height: 37,
-    alignSelf: 'center',
+    width: '100%',
+    height: 43,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 3,
-    marginTop: 14,
-    marginBottom: 22,
+    marginTop: 8,
+    marginBottom: 20,
   },
-
   textoBotao: {
     color: '#FFFFFF',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: 'bold',
+    letterSpacing: 1,
   },
-
   linha: {
     height: 1,
     backgroundColor: '#BBBBBB',
-    marginBottom: 12,
+    marginBottom: 15,
   },
-
+  textoSocial: {
+    color: '#777777',
+    fontSize: 11,
+    textAlign: 'center',
+  },
   redesSociais: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 17,
-    marginBottom: 25,
+    marginTop: 13,
+    marginBottom: 22,
   },
-
   botaoSocial: {
-    width: 53,
-    height: 42,
+    width: 45,
+    height: 40,
     borderWidth: 1,
-    borderColor: '#888888',
+    borderColor: '#BBBBBB',
     borderRadius: 3,
     backgroundColor: '#F1F1F1',
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   google: {
     color: '#000000',
-    fontSize: 30,
+    fontSize: 27,
     fontWeight: 'bold',
   },
-
   mensagemErro: {
     color: '#B00020',
     fontSize: 12,
-    marginTop: -5,
-    marginBottom: 10,
+    textAlign: 'center',
+    marginBottom: 12,
   },
-
   rodapeCard: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     flexWrap: 'wrap',
   },
-
   textoPequeno: {
     color: '#111111',
-    fontSize: 10,
+    fontSize: 11,
   },
-
   link: {
     color: '#111111',
-    fontSize: 10,
+    fontSize: 11,
     textDecorationLine: 'underline',
   },
-
   rodape: {
     color: '#777777',
     fontSize: 10,
     textAlign: 'center',
-    marginTop: 35,
+    marginTop: 28,
   },
 });

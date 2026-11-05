@@ -1,4 +1,4 @@
-import { useState } from 'react';
+
 import {
   View,
   Text,
@@ -7,25 +7,30 @@ import {
   TouchableOpacity,
   StyleSheet,
   StatusBar,
+  useWindowDimensions,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFavoritos } from '../hooks/useFavoritos';
 
 const novidades = [
   {
+    id: '3',
     nome: 'Gown Saint Tropez Branco',
     original: 'R$ 1.280,00',
     preco: 'R$ 897,00',
     imagem: require('../../assets/Img/GownSaint.png'),
   },
   {
+    id: '1',
     nome: 'Blusa em organza Branco',
     original: 'R$ 760,00',
     preco: 'R$ 760,00',
     imagem: require('../../assets/Img/BlusaEmOrganza.png'),
   },
   {
+    id: '2',
     nome: 'Set Denim Grand Icon Azul',
     original: 'R$ 1.197,00',
     preco: 'R$ 1.197,00',
@@ -35,18 +40,21 @@ const novidades = [
 
 const maisVendidos = [
   {
+    id: '5',
     nome: 'Vestido Longo Azul-Marinho',
     original: 'R$ 1.490,00',
     preco: 'R$ 897,00',
     imagem: require('../../assets/Img/VestidoLongoAzul.png'),
   },
   {
+    id: '6',
     nome: 'Conjunto Social Preto & Branco',
     original: 'R$ 890,00',
     preco: 'R$ 597,00',
     imagem: require('../../assets/Img/ConjuntoSocialPreto.png'),
   },
   {
+    id: '4',
     nome: 'Trench Coat Alfaiataria Preto',
     original: 'R$ 4.290,00',
     preco: 'R$ 3.200,00',
@@ -74,16 +82,13 @@ const categorias = [
 ];
 
 export default function HomeScreen() {
-  const [favoritos, setFavoritos] = useState<string[]>([]);
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const { favoritos, alternarFavorito } = useFavoritos();
 
-  function alternarFavorito(nome: string) {
-    setFavoritos((atuais) =>
-      atuais.includes(nome)
-        ? atuais.filter((item) => item !== nome)
-        : [...atuais, nome]
-    );
-  }
+  const isDesktop = width >= 768;
+  const margem = isDesktop ? 38 : 18;
+  const alturaBanner = isDesktop ? 280 : 180;
 
   function abrirCatalogo() {
     router.push('/catalogo');
@@ -94,19 +99,52 @@ export default function HomeScreen() {
     produtos: typeof novidades
   ) {
     return (
-      <View style={styles.secao}>
+      <View
+        style={[
+          styles.secao,
+          {
+            marginHorizontal: margem,
+            marginBottom: isDesktop ? 38 : 30,
+          },
+        ]}
+      >
         <View style={styles.tituloSecao}>
-          <Text style={styles.titulo}>{titulo}</Text>
+          <Text
+            style={[
+              styles.titulo,
+              { fontSize: isDesktop ? 17 : 14 },
+            ]}
+          >
+            {titulo}
+          </Text>
 
           <TouchableOpacity onPress={abrirCatalogo}>
-            <Text style={styles.verTudo}>VER TUDO</Text>
+            <Text
+              style={[
+                styles.verTudo,
+                { fontSize: isDesktop ? 10 : 9 },
+              ]}
+            >
+              VER TUDO
+            </Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.listaProdutos}>
           {produtos.map((produto) => (
-            <View style={styles.produto} key={produto.nome}>
-              <TouchableOpacity onPress={abrirCatalogo}>
+            <View
+              style={[
+                styles.produto,
+                {
+                  width: isDesktop ? '31.8%' : '48%',
+                },
+              ]}
+              key={produto.id}
+            >
+              <TouchableOpacity
+                onPress={abrirCatalogo}
+                style={styles.areaImagem}
+              >
                 <Image
                   source={produto.imagem}
                   style={[
@@ -118,30 +156,46 @@ export default function HomeScreen() {
               </TouchableOpacity>
 
               <View style={styles.linhaNome}>
-                <Text style={styles.nomeProduto}>
+                <Text
+                  style={[
+                    styles.nomeProduto,
+                    { fontSize: isDesktop ? 13 : 11 },
+                  ]}
+                >
                   {produto.nome}
                 </Text>
 
                 <TouchableOpacity
-                  onPress={() => alternarFavorito(produto.nome)}
+                  onPress={() => alternarFavorito(produto.id)}
+                  style={styles.botaoFavorito}
                 >
                   <Ionicons
                     name={
-                      favoritos.includes(produto.nome)
+                      favoritos.includes(produto.id)
                         ? 'heart'
                         : 'heart-outline'
                     }
-                    size={15}
+                    size={isDesktop ? 19 : 17}
                     color="#111111"
                   />
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.precoOriginal}>
+              <Text
+                style={[
+                  styles.precoOriginal,
+                  { fontSize: isDesktop ? 10 : 9 },
+                ]}
+              >
                 {produto.original}
               </Text>
 
-              <Text style={styles.preco}>
+              <Text
+                style={[
+                  styles.preco,
+                  { fontSize: isDesktop ? 12 : 11 },
+                ]}
+              >
                 {produto.preco}
               </Text>
             </View>
@@ -162,323 +216,366 @@ export default function HomeScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* CABEÇALHO */}
-        <View style={styles.cabecalho}>
-          <View style={styles.espacoLateral} />
-
-          <View style={styles.marca}>
-            <Text style={styles.logo}>BELLAVER</Text>
-            <Text style={styles.estabelecimento}>EST. 1972</Text>
-          </View>
-
-
-          <TouchableOpacity
-            style={styles.menu}
-            onPress={() => router.push('/menu')}
+        <View style={styles.conteudo}>
+          <View
+            style={[
+              styles.cabecalho,
+              { height: isDesktop ? 120 : 100 },
+            ]}
           >
-            <Ionicons name="menu-outline" size={29} color="#111111" />
-          </TouchableOpacity>
+            <View style={styles.espacoLateral} />
 
-        </View>
+            <View style={styles.marca}>
+              <Text
+                style={[
+                  styles.logo,
+                  { fontSize: isDesktop ? 32 : 25 },
+                ]}
+              >
+                BELLAVER
+              </Text>
 
-        <View style={styles.linhaCabecalho} />
-
-        {/* DESTAQUE */}
-        <View style={styles.banner}>
-          <View style={styles.textoBanner}>
-            <Text style={styles.newIn}>NEW IN</Text>
-            <Text style={styles.desconto}>20% OFF</Text>
-            <Text style={styles.subtituloBanner}>
-              EM PEÇAS INÉDITAS
-            </Text>
+              <Text style={styles.estabelecimento}>
+                EST. 1972
+              </Text>
+            </View>
 
             <TouchableOpacity
-              style={styles.botaoComprar}
-              onPress={abrirCatalogo}
+              style={styles.menu}
+              onPress={() => router.push('/menu')}
             >
-              <Text style={styles.textoBotao}>COMPRE AGORA</Text>
+              <Ionicons
+                name="menu-outline"
+                size={29}
+                color="#111111"
+              />
             </TouchableOpacity>
           </View>
 
-          <Image
-            source={require('../../assets/Img/ColeteAlfaiatariaRisca.png')}
+          <View
             style={[
-              styles.imagemBanner,
-              { filter: 'grayscale(100%)' } as any,
+              styles.linhaCabecalho,
+              { marginHorizontal: margem },
             ]}
-            resizeMode="cover"
           />
-        </View>
 
-        <View style={styles.linhaBanner} />
+          <View
+            style={[
+              styles.banner,
+              {
+                marginHorizontal: margem,
+                height: alturaBanner,
+              },
+            ]}
+          >
+            <View style={styles.textoBanner}>
+              <Text
+                style={[
+                  styles.newIn,
+                  { fontSize: isDesktop ? 25 : 19 },
+                ]}
+              >
+                NEW IN
+              </Text>
 
-        {/* PRODUTOS */}
-        {renderProdutos('Novidades', novidades)}
-        {renderProdutos('Mais vendidos', maisVendidos)}
+              <Text
+                style={[
+                  styles.desconto,
+                  { fontSize: isDesktop ? 29 : 21 },
+                ]}
+              >
+                20% OFF
+              </Text>
 
-        {/* CATEGORIAS */}
-        <View style={styles.secaoCategorias}>
-          <View style={styles.tituloSecao}>
-            <Text style={styles.titulo}>
-              Categorias em destaque
-            </Text>
+              <Text
+                style={[
+                  styles.subtituloBanner,
+                  { fontSize: isDesktop ? 13 : 10 },
+                ]}
+              >
+                EM PEÇAS INÉDITAS
+              </Text>
 
-            <TouchableOpacity onPress={() => router.push('/categoria')}>
-              <Text style={styles.verTudo}>VER TUDO</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.listaCategorias}>
-            {categorias.map((categoria) => (
               <TouchableOpacity
-                key={categoria.nome}
-                style={styles.categoria}
+                style={styles.botaoComprar}
                 onPress={abrirCatalogo}
               >
-                <Image
-                  source={categoria.imagem}
-                  style={[
-                    styles.imagemCategoria,
-                    { filter: 'grayscale(100%)' } as any,
-                  ]}
-                  resizeMode="cover"
-                />
-
-                <Text style={styles.nomeCategoria}>
-                  {categoria.nome}
+                <Text style={styles.textoBotao}>
+                  COMPRE AGORA
                 </Text>
               </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+            </View>
 
-        <View style={styles.rodape}>
-          <Text style={styles.textoRodape}>
-            BELLAVER ® TODOS OS DIREITOS RESERVADOS
-          </Text>
+            <Image
+              source={require('../../assets/Img/ColeteAlfaiatariaRisca.png')}
+              style={[
+                styles.imagemBanner,
+                { filter: 'grayscale(100%)' } as any,
+              ]}
+              resizeMode="cover"
+            />
+          </View>
+
+          <View
+            style={[
+              styles.linhaBanner,
+              { marginHorizontal: margem },
+            ]}
+          />
+
+          {renderProdutos('Novidades', novidades)}
+          {renderProdutos('Mais vendidos', maisVendidos)}
+
+          <View
+            style={[
+              styles.secaoCategorias,
+              { marginHorizontal: margem },
+            ]}
+          >
+            <View style={styles.tituloSecao}>
+              <Text
+                style={[
+                  styles.titulo,
+                  { fontSize: isDesktop ? 17 : 14 },
+                ]}
+              >
+                Categorias em destaque
+              </Text>
+
+              <TouchableOpacity
+                onPress={() => router.push('/categoria')}
+              >
+                <Text
+                  style={[
+                    styles.verTudo,
+                    { fontSize: isDesktop ? 10 : 9 },
+                  ]}
+                >
+                  VER TUDO
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.listaCategorias}>
+              {categorias.map((categoria) => (
+                <TouchableOpacity
+                  key={categoria.nome}
+                  style={styles.categoria}
+                  onPress={abrirCatalogo}
+                >
+                  <Image
+                    source={categoria.imagem}
+                    style={[
+                      styles.imagemCategoria,
+                      {
+                        width: isDesktop ? 105 : 75,
+                        height: isDesktop ? 105 : 75,
+                        filter: 'grayscale(100%)',
+                      } as any,
+                    ]}
+                    resizeMode="cover"
+                  />
+
+                  <Text
+                    style={[
+                      styles.nomeCategoria,
+                      { fontSize: isDesktop ? 12 : 10 },
+                    ]}
+                  >
+                    {categoria.nome}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.rodape}>
+            <Text style={styles.textoRodape}>
+              BELLAVER ® TODOS OS DIREITOS RESERVADOS
+            </Text>
+          </View>
         </View>
       </ScrollView>
     </View>
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-
+  conteudo: {
+    width: '100%',
+    maxWidth: 1250,
+    alignSelf: 'center',
+  },
   cabecalho: {
-    height: 110,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
   },
-
   espacoLateral: {
     width: 28,
   },
-
   marca: {
     alignItems: 'center',
     flex: 1,
   },
-
   logo: {
     color: '#111111',
-    fontSize: 28,
     fontWeight: '300',
     letterSpacing: 6,
   },
-
   estabelecimento: {
     color: '#111111',
     fontSize: 11,
     marginTop: 6,
   },
-
   menu: {
     width: 28,
     alignItems: 'center',
   },
-
   linhaCabecalho: {
     height: 1,
     backgroundColor: '#AAAAAA',
-    marginHorizontal: 38,
-    marginBottom: 40,
+    marginBottom: 35,
   },
-
   banner: {
     flexDirection: 'row',
-    marginHorizontal: 38,
-    minHeight: 188,
     borderTopWidth: 1,
     borderColor: '#AAAAAA',
   },
-
   textoBanner: {
     width: '46%',
     justifyContent: 'center',
     alignItems: 'flex-start',
     paddingLeft: 9,
-    paddingRight: 5,
+    paddingRight: 12,
   },
-
   newIn: {
-    fontSize: 19,
     fontWeight: '600',
     color: '#111111',
   },
-
   desconto: {
-    fontSize: 21,
     fontWeight: 'bold',
     color: '#111111',
     marginTop: 6,
   },
-
   subtituloBanner: {
-    fontSize: 10,
     color: '#111111',
     marginTop: 7,
   },
-
   botaoComprar: {
     backgroundColor: '#000000',
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 9,
-    marginTop: 14,
+    marginTop: 16,
     width: '100%',
     alignItems: 'center',
   },
-
   textoBotao: {
     color: '#FFFFFF',
     fontSize: 10,
   },
-
   imagemBanner: {
     width: '54%',
-    height: 188,
+    height: '100%',
   },
-
   linhaBanner: {
     height: 1,
     backgroundColor: '#AAAAAA',
-    marginHorizontal: 38,
     marginBottom: 30,
   },
-
-  secao: {
-    marginHorizontal: 38,
-    marginBottom: 28,
-  },
-
+  secao: {},
   tituloSecao: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
   },
-
   titulo: {
     color: '#111111',
-    fontSize: 13,
     fontWeight: '600',
   },
-
   verTudo: {
     color: '#111111',
-    fontSize: 8,
   },
-
   listaProdutos: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 12,
+    rowGap: 24,
   },
-
   produto: {
-    flex: 1,
     minWidth: 0,
+    marginBottom: 2,
   },
-
+  areaImagem: {
+    width: '100%',
+    aspectRatio: 0.94,
+    overflow: 'hidden',
+    backgroundColor: '#F2F2F2',
+  },
   imagemProduto: {
     width: '100%',
-    height: 100,
-    backgroundColor: '#EEEEEE',
+    height: '100%',
   },
-
   linhaNome: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     marginTop: 7,
-    gap: 3,
+    gap: 4,
   },
-
   nomeProduto: {
     flex: 1,
     color: '#111111',
-    fontSize: 9,
-    lineHeight: 12,
+    lineHeight: 16,
   },
-
+  botaoFavorito: {
+    paddingLeft: 3,
+    paddingBottom: 3,
+  },
   precoOriginal: {
     color: '#999999',
-    fontSize: 7,
     textDecorationLine: 'line-through',
-    marginTop: 3,
+    marginTop: 4,
   },
-
   preco: {
     color: '#111111',
-    fontSize: 9,
-    marginTop: 2,
+    marginTop: 3,
   },
-
   secaoCategorias: {
-    marginHorizontal: 38,
-    marginBottom: 30,
+    marginBottom: 35,
   },
-
   listaCategorias: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
+    justifyContent: 'space-around',
+    marginTop: 12,
     gap: 10,
   },
-
   categoria: {
     flex: 1,
     alignItems: 'center',
   },
-
   imagemCategoria: {
-    width: 75,
-    height: 75,
     borderRadius: 100,
     backgroundColor: '#EEEEEE',
   },
-
   nomeCategoria: {
     color: '#111111',
-    fontSize: 9,
-    marginTop: 8,
+    marginTop: 9,
     textAlign: 'center',
   },
-
   rodape: {
-    height: 45,
+    minHeight: 45,
     backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 8,
   },
-
   textoRodape: {
     color: '#FFFFFF',
     fontSize: 9,
