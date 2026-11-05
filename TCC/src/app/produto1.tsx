@@ -23,6 +23,8 @@ export default function ProdutoScreen() {
 
   const imagens = [
     require('../../assets/Img/TailleurCinzaRose.png'),
+    require('../../assets/Img/TailleurCinzaRose1.jpg'),
+    require('../../assets/Img/TailleurCinzaRose2.jpg'),
   ];
 
   const descricao =
@@ -52,7 +54,7 @@ export default function ProdutoScreen() {
     );
   }
 
-  function alterarQuantidade(valor) {
+  function alterarQuantidade(valor: string) {
     const numero = Number(valor);
 
     if (valor === '' || (/^\d+$/.test(valor) && numero >= 1 && numero <= 99)) {

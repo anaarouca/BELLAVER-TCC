@@ -7,6 +7,7 @@ import {
   StyleSheet,
   StatusBar,
 } from 'react-native';
+import { router } from 'expo-router';
 
 export default function Filtros() {
   const [tamanhoSelecionado, setTamanhoSelecionado] = useState<string | null>(
@@ -95,8 +96,10 @@ export default function Filtros() {
         <View style={styles.tituloContainer}>
           <TouchableOpacity
             style={styles.botaoVoltar}
-            onPress={() => {}}
+            onPress={() => router.replace('/pesquisa')}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Voltar para pesquisa"
           >
             <Text style={styles.setaVoltar}>‹</Text>
           </TouchableOpacity>

@@ -20,6 +20,11 @@ import {
   signInWithPopup,
 } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
+import {
+  ADMIN_EMAIL,
+  ADMIN_PASSWORD,
+  saveUserRole,
+} from '../auth/session';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -35,6 +40,15 @@ export default function LoginScreen() {
       return;
     }
 
+    if (
+      email.trim().toLowerCase() === ADMIN_EMAIL &&
+      senha === ADMIN_PASSWORD
+    ) {
+      await saveUserRole('admin');
+      router.replace('/cadProduto');
+      return;
+    }
+
     try {
       setCarregando(true);
       setErroLogin('');
@@ -45,6 +59,7 @@ export default function LoginScreen() {
         senha
       );
 
+      await saveUserRole('customer');
       router.replace('/home');
     } catch (erro: any) {
       console.log('ERRO DO LOGIN:', erro.code, erro.message);
@@ -89,6 +104,7 @@ export default function LoginScreen() {
 
       await signInWithPopup(auth, provider);
 
+      await saveUserRole('customer');
       router.replace('/home');
     } catch (erro: any) {
       console.log('ERRO GOOGLE:', erro.code, erro.message);
@@ -232,6 +248,13 @@ export default function LoginScreen() {
           <Text style={styles.recuperar}>
             RECUPERAR SENHA
           </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.botaoAdm}
+          onPress={() => router.push('/loginAdm')}
+        >
+          <Text style={styles.textoBotaoAdm}>Entrar como administrador</Text>
         </TouchableOpacity>
 
         <View style={styles.rodapeCard}>
@@ -405,7 +428,23 @@ const styles = StyleSheet.create({
     color: '#111111',
     fontSize: 12,
     textAlign: 'center',
-    marginBottom: 25,
+    marginBottom: 20,
+  },
+
+  botaoAdm: {
+    alignSelf: 'center',
+    backgroundColor: '#111111',
+    borderRadius: 3,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    marginBottom: 20,
+  },
+
+  textoBotaoAdm: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 
   rodapeCard: {

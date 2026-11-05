@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -11,29 +11,74 @@ import {
   StyleSheet,
   Alert,
   SafeAreaView,
+  ImageSourcePropType,
 } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { listarProdutosCadastrados } from '../data/produtosCadastrados';
 
 const produtos = [
   {
     id: '1',
-    nome: 'Vestido Longo',
-    precoAntigo: 'R$ 1.450,00',
+    nome: 'Blusa em organza de seda Branco',
+    precoAntigo: 'R$ 890,00',
+    preco: 'R$ 760,00',
+    imagem: require('../../assets/Img/BlusaEmOrganza.png'),
+  },
+  {
+    id: '2',
+    nome: 'Set Denim Grand Icon Azul Gisele Edition',
+    precoAntigo: 'R$ 1.480,00',
+    preco: 'R$ 1.197,00',
+    imagem: require('../../assets/Img/SetDenimGrand.png'),
+  },
+  {
+    id: '3',
+    nome: 'Gown Saint Tropez Branco',
+    precoAntigo: 'R$ 1.280,00',
+    preco: 'R$ 897,00',
+    imagem: require('../../assets/Img/GownSaint.png'),
+  },
+  {
+    id: '4',
+    nome: 'Trench Coat Alfaiataria Preto',
+    precoAntigo: 'R$ 3.500,00',
+    preco: 'R$ 320,00',
+    imagem: require('../../assets/Img/TrenchCoatAlfaiataria.png'),
+  },
+  {
+    id: '5',
+    nome: 'Vestido Longo Azul-Marinho',
+    precoAntigo: 'R$ 1.140,00',
     preco: 'R$ 897,00',
     imagem: require('../../assets/Img/VestidoLongoAzul.png'),
   },
   {
-    id: '2',
-    nome: 'Conjunto Social',
+    id: '6',
+    nome: 'Conjunto Social Preto e Branco',
     precoAntigo: 'R$ 780,00',
     preco: 'R$ 597,00',
     imagem: require('../../assets/Img/ConjuntoSocialPreto.png'),
   },
   {
-    id: '3',
-    nome: 'Trench Coat',
-    precoAntigo: 'R$ 600,00',
-    preco: 'R$ 320,00',
-    imagem: require('../../assets/Img/TrenchCoatAlfaiataria.png'),
+    id: '7',
+    nome: 'Conjunto Alfaiataria Off-White',
+    precoAntigo: 'R$ 899,00',
+    preco: 'R$ 697,00',
+    imagem: require('../../assets/Img/ConjuntoAlfaiatariaOff.png'),
+  },
+  {
+    id: '8',
+    nome: 'Colete Alfaiataria Risca de Giz Hudson',
+    precoAntigo: 'R$ 389,00',
+    preco: 'R$ 297,00',
+    imagem: require('../../assets/Img/ColeteAlfaiatariaRisca.png'),
+  },
+  {
+    id: '9',
+    nome: 'Tailleur Cinza & Rose Quartz | Ana Paula Renault',
+    precoAntigo: 'R$ 780,00',
+    preco: 'R$ 597,00',
+    imagem: require('../../assets/Img/TailleurCinzaRose.png'),
   },
 ];
 
@@ -43,11 +88,79 @@ const pesquisasIniciais = [
   'Boulevard Slingback pumps - Gucci',
 ];
 
+type ProdutoPesquisa = {
+  id: string;
+  nome: string;
+  precoAntigo: string;
+  preco: string;
+  imagem: ImageSourcePropType;
+  cadastrado: boolean;
+};
+
+function normalizarTexto(texto: string): string {
+  return texto
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('pt-BR')
+    .trim();
+}
+
 export default function Pesquisa() {
   const [pesquisa, setPesquisa] = useState('');
   const [recentes, setRecentes] = useState(pesquisasIniciais);
   const [mostrarRecentes, setMostrarRecentes] = useState(true);
   const [favoritos, setFavoritos] = useState<string[]>([]);
+  const [produtosCadastrados, setProdutosCadastrados] = useState<
+    Awaited<ReturnType<typeof listarProdutosCadastrados>>
+  >([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let ativo = true;
+
+      listarProdutosCadastrados()
+        .then((produtos) => {
+          if (ativo) {
+            setProdutosCadastrados(produtos);
+          }
+        })
+        .catch((erro: unknown) => {
+          console.error('Erro ao carregar produtos para pesquisa:', erro);
+          Alert.alert(
+            'Erro ao carregar produtos',
+            erro instanceof Error
+              ? erro.message
+              : 'Não foi possível carregar os produtos cadastrados.'
+          );
+        });
+
+      return () => {
+        ativo = false;
+      };
+    }, [])
+  );
+
+  const todosProdutos: ProdutoPesquisa[] = [
+    ...produtos.map((produto) => ({
+      ...produto,
+      cadastrado: false,
+    })),
+    ...produtosCadastrados.map((produto) => ({
+      id: produto.id,
+      nome: produto.nome,
+      precoAntigo: `R$ ${produto.precoOriginal.replace(/^R\$\s*/i, '').trim()}`,
+      preco: `R$ ${produto.precoDesconto.replace(/^R\$\s*/i, '').trim()}`,
+      imagem: { uri: produto.imagens[0] },
+      cadastrado: true,
+    })),
+  ];
+
+  const termoPesquisa = normalizarTexto(pesquisa);
+  const resultados = termoPesquisa
+    ? todosProdutos.filter((produto) =>
+        normalizarTexto(produto.nome).includes(termoPesquisa)
+      )
+    : todosProdutos.slice(0, 3);
 
   function pesquisar(texto?: string) {
     const termo = (texto || pesquisa).trim();
@@ -59,11 +172,12 @@ export default function Pesquisa() {
 
     setPesquisa(termo);
 
-    if (!recentes.includes(termo)) {
-      setRecentes([termo, ...recentes].slice(0, 5));
-    }
-
-    Alert.alert('Pesquisa', 'Você pesquisou por: ' + termo);
+    setRecentes((atuais) => {
+      const semRepeticao = atuais.filter(
+        (recente) => normalizarTexto(recente) !== normalizarTexto(termo)
+      );
+      return [termo, ...semRepeticao].slice(0, 5);
+    });
   }
 
   function alternarFavorito(id: string) {
@@ -75,10 +189,7 @@ export default function Pesquisa() {
   }
 
   function abrirFiltros() {
-    Alert.alert(
-      'Buscar por filtros',
-      'Em breve você poderá filtrar por categoria, tamanho, marca e preço.'
-    );
+    router.push('/filtroPesquisa');
   }
 
   function limparHistorico() {
@@ -132,47 +243,67 @@ export default function Pesquisa() {
 
           {/* SUGESTÕES */}
           <Text style={styles.tituloSugestoes}>
-            Sugestões para você
+            {termoPesquisa ? 'Resultados da pesquisa' : 'Sugestões para você'}
           </Text>
 
-          <View style={styles.listaProdutos}>
-            {produtos.map((produto) => (
-              <View style={styles.produto} key={produto.id}>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => pesquisar(produto.nome)}
-                >
-                  <Image
-                    source={produto.imagem}
-                    style={styles.imagemProduto}
-                    resizeMode="cover"
-                  />
-                </TouchableOpacity>
+          {resultados.length > 0 ? (
+            <View style={styles.listaProdutos}>
+              {resultados.map((produto) => (
+                <View style={styles.produto} key={produto.id}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      if (produto.cadastrado) {
+                        router.push({
+                          pathname: '/produto2',
+                          params: { id: produto.id },
+                        });
+                      } else {
+                        pesquisar(produto.nome);
+                      }
+                    }}
+                  >
+                    <Image
+                      source={produto.imagem}
+                      style={styles.imagemProduto}
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
 
-                <View style={styles.nomeEFavorito}>
-                  <Text style={styles.nomeProduto}>
-                    {produto.nome}
+                  <View style={styles.nomeEFavorito}>
+                    <Text style={styles.nomeProduto}>
+                      {produto.nome}
+                    </Text>
+
+                    <TouchableOpacity
+                      onPress={() => alternarFavorito(produto.id)}
+                    >
+                      <Text style={styles.coracao}>
+                        {favoritos.includes(produto.id) ? '♥' : '♡'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <Text style={styles.precoAntigo}>
+                    {produto.precoAntigo}
                   </Text>
 
-                  <TouchableOpacity
-                    onPress={() => alternarFavorito(produto.id)}
-                  >
-                    <Text style={styles.coracao}>
-                      {favoritos.includes(produto.id) ? '♥' : '♡'}
-                    </Text>
-                  </TouchableOpacity>
+                  <Text style={styles.preco}>
+                    {produto.preco}
+                  </Text>
                 </View>
-
-                <Text style={styles.precoAntigo}>
-                  {produto.precoAntigo}
-                </Text>
-
-                <Text style={styles.preco}>
-                  {produto.preco}
-                </Text>
-              </View>
-            ))}
-          </View>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.semResultados}>
+              <Text style={styles.textoSemResultados}>
+                Peça não encontrada
+              </Text>
+              <Text style={styles.dicaSemResultados}>
+                Tente buscar por outro nome ou tipo de peça.
+              </Text>
+            </View>
+          )}
 
           {/* PESQUISAS RECENTES */}
           <TouchableOpacity
@@ -334,11 +465,37 @@ const styles = StyleSheet.create({
 
   listaProdutos: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
+    rowGap: 18,
   },
 
   produto: {
-    width: '26%',
+    width: '30%',
+  },
+
+  semResultados: {
+    minHeight: 105,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#DDDDDD',
+    borderRadius: 3,
+    padding: 16,
+  },
+
+  textoSemResultados: {
+    color: '#222222',
+    fontSize: 15,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+
+  dicaSemResultados: {
+    color: '#777777',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 6,
   },
 
   imagemProduto: {

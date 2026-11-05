@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from 'react';
 
-let listaFavoritos: string[] = ['7', '8', '9', '10'];
+let listaFavoritos: string[] = [];
 
 const ouvintes = new Set<(lista: string[]) => void>();
 

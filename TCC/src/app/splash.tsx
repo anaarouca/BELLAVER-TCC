@@ -1,78 +1,106 @@
-import { useEffect, useState } from 'react';
+
+import { useEffect, useState, useRef } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   StatusBar,
   ImageBackground,
+  Text,
+  Pressable,
+  Animated,
 } from 'react-native';
 import { router } from 'expo-router';
 
 const telas = [
-  {
-    imagem: require('../../assets/Img/ABERTURA 1.png'),
-    titulo: 'BELLAVER',
-    subtitulo: 'MODA • ELEGÂNCIA • ESTILO',
-    mensagem: 'Descubra uma nova forma de expressar quem você é.',
-  },
-  {
-    imagem: require('../../assets/Img/ABERTURA 2.png'),
-    titulo: 'SEU ESTILO',
-    subtitulo: 'ELEGÂNCIA EM CADA DETALHE',
-    mensagem: 'Peças que valorizam sua personalidade e autenticidade.',
-  },
-  {
-    imagem: require('../../assets/Img/ABERTURA 3.png'),
-    titulo: 'NOVA COLEÇÃO',
-    subtitulo: 'FEITA PARA VOCÊ',
-    mensagem: 'Encontre combinações que traduzem sua essência.',
-  },
-  {
-    imagem: require('../../assets/Img/ABERTURA 4.png'),
-    titulo: 'BEM-VINDA',
-    subtitulo: 'SEU PRÓXIMO LOOK COMEÇA AQUI',
-    mensagem: 'Explore a Bellaver e encontre suas próximas peças favoritas.',
-  },
+  require('../../assets/Img/ABERTURA 1.png'),
+  require('../../assets/Img/ABERTURA 2.png'),
+  require('../../assets/Img/ABERTURA 3.png'),
+  require('../../assets/Img/ABERTURA 4.png'),
 ];
 
 export default function SplashScreen() {
   const [telaAtual, setTelaAtual] = useState(0);
+  const opacidade = useRef(new Animated.Value(1)).current;
+  const transicionando = useRef(false);
 
+  function trocarTela() {
+    if (transicionando.current) {
+      return;
+    }
+
+    transicionando.current = true;
+
+    Animated.timing(opacidade, {
+      toValue: 0,
+      duration: 350,
+      useNativeDriver: true,
+    }).start(() => {
+      if (telaAtual < telas.length - 1) {
+        setTelaAtual(telaAtual + 1);
+
+        Animated.timing(opacidade, {
+          toValue: 1,
+          duration: 650,
+          useNativeDriver: true,
+        }).start(() => {
+          transicionando.current = false;
+        });
+      } else {
+        router.replace('/login');
+      }
+    });
+  }
+
+  function pular() {
+    if (transicionando.current) {
+      return;
+    }
+
+    transicionando.current = true;
+
+    Animated.timing(opacidade, {
+      toValue: 0,
+      duration: 450,
+      useNativeDriver: true,
+    }).start(() => {
+      router.replace('/login');
+    });
+  }
 
   useEffect(() => {
-    setTelaAtual(0);
+    const intervalo = setTimeout(() => {
+      trocarTela();
+    }, 6000);
 
-    const intervalo = setInterval(() => {
-      setTelaAtual((atual) => {
-        if (atual >= telas.length - 1) {
-          clearInterval(intervalo);
-          router.replace('/login');
-          return atual;
-        }
-
-        return atual + 1;
-      });
-    }, 4000);
-
-    return () => clearInterval(intervalo);
-  }, []);
-
-
-
-  const tela = telas[telaAtual];
+    return () => clearTimeout(intervalo);
+  }, [telaAtual]);
 
   return (
-    <ImageBackground
-      source={tela.imagem}
-      style={styles.container}
-      resizeMode="stretch"
-    >
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
-      <View style={styles.sobreposicao}>
+      <Animated.View
+        style={[
+          styles.imagemContainer,
+          { opacity: opacidade },
+        ]}
+      >
+        <Pressable
+          style={styles.imagemToque}
+          onPress={trocarTela}
+        >
+          <ImageBackground
+            source={telas[telaAtual]}
+            style={styles.imagem}
+            resizeMode="stretch"
+          />
+        </Pressable>
+      </Animated.View>
+
+      <View style={styles.topo}>
         <View style={styles.barrinhas}>
           {telas.map((item, index) => (
-            <View key={item.titulo} style={styles.trilho}>
+            <View key={index} style={styles.trilho}>
               <View
                 style={[
                   styles.progresso,
@@ -82,121 +110,67 @@ export default function SplashScreen() {
             </View>
           ))}
         </View>
+
+        <Pressable onPress={pular} style={styles.botaoPular}>
+          <Text style={styles.pular}>PULAR</Text>
+        </Pressable>
       </View>
-    </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#000000',
   },
-
-  sobreposicao: {
+  imagemContainer: {
     flex: 1,
-    backgroundColor: 'transparent',
-    paddingHorizontal: 22,
-    paddingTop: 0,
-    paddingBottom: 30,
-    justifyContent: 'flex-end',
   },
-
+  imagemToque: {
+    flex: 1,
+  },
+  imagem: {
+    flex: 1,
+  },
+  topo: {
+    position: 'absolute',
+    bottom: 35,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    gap: 15,
+  },
   barrinhas: {
+    flex: 1,
     flexDirection: 'row',
     gap: 6,
-    marginBottom: 10,
-    width: '50%',
-    alignSelf: 'center',
   },
-
-  imagemFundo: {
-    transform: [{ translateY: 60 }],
-  },
-
   trilho: {
     flex: 1,
     height: 3,
-    backgroundColor: 'rgba(255,255,255,0.45)',
+    backgroundColor: 'rgba(255,255,255,0.5)',
     borderRadius: 5,
     overflow: 'hidden',
   },
-
   progresso: {
     height: '100%',
     width: '0%',
     backgroundColor: '#FFFFFF',
   },
-
   progressoAtivo: {
     width: '100%',
   },
-
-  numero: {
+  botaoPular: {
+    paddingVertical: 8,
+  },
+  pular: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: 10,
     letterSpacing: 2,
-    textAlign: 'right',
-    marginTop: 18,
-  },
-
-  conteudo: {
-    alignItems: 'center',
-    paddingHorizontal: 10,
-  },
-
-  linha: {
-    width: 45,
-    height: 1,
-    backgroundColor: '#FFFFFF',
-    marginBottom: 25,
-  },
-
-  logo: {
-    color: '#FFFFFF',
-    fontSize: 31,
-    fontWeight: 'bold',
-    letterSpacing: 6,
-    textAlign: 'center',
-  },
-
-  subtitulo: {
-    color: '#FFFFFF',
-    fontSize: 9,
-    letterSpacing: 3,
-    textAlign: 'center',
-    marginTop: 14,
-  },
-
-  divisor: {
-    width: 35,
-    height: 1,
-    backgroundColor: '#FFFFFF',
-    marginVertical: 22,
-  },
-
-  mensagem: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    lineHeight: 24,
-    textAlign: 'center',
-    maxWidth: 290,
-  },
-
-  linhaInferior: {
-    width: 45,
-    height: 1,
-    backgroundColor: '#FFFFFF',
-    marginTop: 25,
-  },
-
-  rodape: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-
-  rodapeTexto: {
-    color: '#FFFFFF',
-    fontSize: 9,
-    letterSpacing: 2,
+    fontWeight: '600',
   },
 });

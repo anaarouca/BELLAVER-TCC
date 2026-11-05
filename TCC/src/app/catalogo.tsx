@@ -1,3 +1,5 @@
+
+import { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -6,12 +8,15 @@ import {
   TouchableOpacity,
   StyleSheet,
   StatusBar,
+  Alert,
+  ImageSourcePropType,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useFavoritos } from '../hooks/useFavoritos';
+import { listarProdutosCadastrados } from '../data/produtosCadastrados';
 
-const produtos = [
+const produtosFixos = [
   {
     id: '1',
     nome: 'Blusa em organza de seda Branco',
@@ -84,14 +89,86 @@ const produtos = [
   },
 ];
 
+type ProdutoCatalogo = {
+  id: string;
+  nome: string;
+  original: string;
+  preco: string;
+  imagem: ImageSourcePropType;
+  cadastrado: boolean;
+};
+
+function formatarPreco(preco: string): string {
+  return `R$ ${preco.replace(/^R\$\s*/i, '').trim()}`;
+}
+
 export default function CatalogoScreen() {
   const { favoritos, alternarFavorito } = useFavoritos();
 
-  function abrirProduto(id: string) {
+  const [produtosCadastrados, setProdutosCadastrados] = useState<
+    Awaited<ReturnType<typeof listarProdutosCadastrados>>
+  >([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let ativo = true;
+
+      listarProdutosCadastrados()
+        .then((produtos) => {
+          if (ativo) {
+            setProdutosCadastrados(produtos);
+          }
+        })
+        .catch((erro: unknown) => {
+          console.error('Erro ao carregar produtos cadastrados:', erro);
+
+          Alert.alert(
+            'Erro ao carregar catálogo',
+            erro instanceof Error
+              ? erro.message
+              : 'Não foi possível carregar os produtos cadastrados.'
+          );
+        });
+
+      return () => {
+        ativo = false;
+      };
+    }, [])
+  );
+
+  const produtos: ProdutoCatalogo[] = [
+    ...produtosFixos.map((produto) => ({
+      ...produto,
+      cadastrado: false,
+    })),
+
+    ...produtosCadastrados.map((produto) => ({
+      id: produto.id,
+      nome: produto.nome,
+      original: formatarPreco(produto.precoOriginal),
+      preco: formatarPreco(produto.precoDesconto),
+      imagem: { uri: produto.imagens[0] },
+      cadastrado: true,
+    })),
+  ];
+
+  function abrirProduto(id: string, cadastrado = false) {
+    if (cadastrado) {
+      router.push({
+        pathname: '/produto2',
+        params: { id },
+      });
+      return;
+    }
+
     router.push({
-      pathname: '/Produtos',
+      pathname: '/produto1',
       params: { id },
-    } as any);
+    });
+  }
+
+  function favoritar(id: string) {
+    alternarFavorito(id);
   }
 
   return (
@@ -110,7 +187,11 @@ export default function CatalogoScreen() {
           style={styles.botaoMenu}
           onPress={() => router.push('/menu')}
         >
-          <Ionicons name="menu-outline" size={28} color="#111111" />
+          <Ionicons
+            name="menu-outline"
+            size={28}
+            color="#111111"
+          />
         </TouchableOpacity>
       </View>
 
@@ -119,8 +200,14 @@ export default function CatalogoScreen() {
       <View style={styles.barraTitulo}>
         <Text style={styles.titulo}>NOVIDADES</Text>
 
-        <TouchableOpacity onPress={() => router.push('/pesquisar' as any)}>
-          <Ionicons name="search-outline" size={19} color="#111111" />
+        <TouchableOpacity
+          onPress={() => router.push('/pesquisar' as any)}
+        >
+          <Ionicons
+            name="search-outline"
+            size={19}
+            color="#111111"
+          />
         </TouchableOpacity>
       </View>
 
@@ -129,60 +216,76 @@ export default function CatalogoScreen() {
         contentContainerStyle={styles.conteudo}
       >
         <View style={styles.grade}>
-          {produtos.map((produto) => (
-            <View style={styles.cardProduto} key={produto.id}>
-              <TouchableOpacity
-                style={styles.areaImagem}
-                activeOpacity={0.8}
-                onPress={() => abrirProduto(produto.id)}
+          {produtos.map((produto) => {
+            const estaFavoritado = favoritos.includes(produto.id);
+
+            return (
+              <View
+                style={styles.cardProduto}
+                key={produto.id}
               >
-                <Image
-                  source={produto.imagem}
-                  style={[
-                    styles.imagemProduto,
-                    { filter: 'grayscale(100%)' } as any,
-                  ]}
-                  resizeMode="cover"
-                />
-              </TouchableOpacity>
-
-              <View style={styles.linhaNome}>
                 <TouchableOpacity
-                  style={styles.nomeClicavel}
-                  onPress={() => abrirProduto(produto.id)}
+                  style={styles.areaImagem}
+                  activeOpacity={0.8}
+                  onPress={() =>
+                    abrirProduto(produto.id, produto.cadastrado)
+                  }
                 >
-                  <Text style={styles.nomeProduto}>
-                    {produto.nome}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.botaoFavorito}
-                  onPress={() => alternarFavorito(produto.id)}
-                >
-                  <Ionicons
-                    name={
-                      favoritos.includes(produto.id)
-                        ? 'heart'
-                        : 'heart-outline'
-                    }
-                    size={17}
-                    color="#111111"
+                  <Image
+                    source={produto.imagem}
+                    style={[
+                      styles.imagemProduto,
+                      { filter: 'grayscale(100%)' } as any,
+                    ]}
+                    resizeMode="cover"
                   />
                 </TouchableOpacity>
+
+                <View style={styles.linhaNome}>
+                  <TouchableOpacity
+                    style={styles.nomeClicavel}
+                    onPress={() =>
+                      abrirProduto(produto.id, produto.cadastrado)
+                    }
+                  >
+                    <Text style={styles.nomeProduto}>
+                      {produto.nome}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.botaoFavorito}
+                    activeOpacity={0.6}
+                    onPress={() => favoritar(produto.id)}
+                  >
+                    <Ionicons
+                      name={
+                        estaFavoritado
+                          ? 'heart'
+                          : 'heart-outline'
+                      }
+                      size={19}
+                      color="#111111"
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() =>
+                    abrirProduto(produto.id, produto.cadastrado)
+                  }
+                >
+                  <Text style={styles.precoOriginal}>
+                    {produto.original}
+                  </Text>
+
+                  <Text style={styles.precoAtual}>
+                    {produto.preco}
+                  </Text>
+                </TouchableOpacity>
               </View>
-
-              <TouchableOpacity onPress={() => abrirProduto(produto.id)}>
-                <Text style={styles.precoOriginal}>
-                  {produto.original}
-                </Text>
-
-                <Text style={styles.precoAtual}>
-                  {produto.preco}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ))}
+            );
+          })}
         </View>
       </ScrollView>
     </View>
@@ -194,6 +297,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+
   cabecalho: {
     height: 114,
     flexDirection: 'row',
@@ -201,33 +305,40 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 24,
   },
+
   espaco: {
     width: 28,
   },
+
   marca: {
     flex: 1,
     alignItems: 'center',
   },
+
   logo: {
     color: '#111111',
     fontSize: 29,
     fontWeight: '300',
     letterSpacing: 6,
   },
+
   estabelecimento: {
     color: '#111111',
     fontSize: 11,
     marginTop: 6,
   },
+
   botaoMenu: {
     width: 28,
     alignItems: 'center',
   },
+
   divisorTopo: {
     height: 1,
     backgroundColor: '#BBBBBB',
     marginHorizontal: 16,
   },
+
   barraTitulo: {
     height: 50,
     flexDirection: 'row',
@@ -235,6 +346,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 28,
   },
+
   titulo: {
     flex: 1,
     textAlign: 'center',
@@ -242,38 +354,46 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '300',
   },
+
   conteudo: {
     paddingHorizontal: 24,
     paddingTop: 0,
     paddingBottom: 30,
   },
+
   grade: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     rowGap: 18,
   },
+
   cardProduto: {
     width: '46.5%',
   },
+
   areaImagem: {
     width: '100%',
     aspectRatio: 0.83,
     backgroundColor: '#EEEEEE',
     overflow: 'hidden',
   },
+
   imagemProduto: {
     width: '100%',
     height: '100%',
   },
+
   linhaNome: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginTop: 6,
   },
+
   nomeClicavel: {
     flex: 1,
   },
+
   nomeProduto: {
     flex: 1,
     color: '#111111',
@@ -282,20 +402,23 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     paddingRight: 3,
   },
+
   botaoFavorito: {
-    width: 22,
-    height: 20,
+    width: 24,
+    height: 22,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 2,
     flexShrink: 0,
   },
+
   precoOriginal: {
     color: '#999999',
     fontSize: 8,
     textDecorationLine: 'line-through',
     marginTop: 2,
   },
+
   precoAtual: {
     color: '#111111',
     fontSize: 10,
