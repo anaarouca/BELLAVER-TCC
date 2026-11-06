@@ -56,7 +56,6 @@ export default function CadastroProdutoScreen() {
   if (!autorizado) {
     return null;
   }
-
   async function selecionarImagem(indice: number) {
     const permissao =
       await ImagePicker.requestMediaLibraryPermissionsAsync();

@@ -271,7 +271,10 @@ export default function ProdutoCadastradoScreen() {
     };
 
     try {
-      const atualizado = await atualizarProdutoCadastrado(produto.id, dadosAtualizados);
+      const atualizado = await atualizarProdutoCadastrado(
+        produtoAtual.id,
+        dadosAtualizados
+      );
       setProduto(atualizado);
       setProdutoEditando(atualizado);
       setModoEdicao(false);

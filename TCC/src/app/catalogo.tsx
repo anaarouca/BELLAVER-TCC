@@ -1,4 +1,3 @@
-
 import { useCallback, useState } from 'react';
 import {
   View,
@@ -104,7 +103,6 @@ function formatarPreco(preco: string): string {
 
 export default function CatalogoScreen() {
   const { favoritos, alternarFavorito } = useFavoritos();
-
   const [produtosCadastrados, setProdutosCadastrados] = useState<
     Awaited<ReturnType<typeof listarProdutosCadastrados>>
   >([]);
@@ -121,7 +119,6 @@ export default function CatalogoScreen() {
         })
         .catch((erro: unknown) => {
           console.error('Erro ao carregar produtos cadastrados:', erro);
-
           Alert.alert(
             'Erro ao carregar catálogo',
             erro instanceof Error
@@ -137,11 +134,7 @@ export default function CatalogoScreen() {
   );
 
   const produtos: ProdutoCatalogo[] = [
-    ...produtosFixos.map((produto) => ({
-      ...produto,
-      cadastrado: false,
-    })),
-
+    ...produtosFixos.map((produto) => ({ ...produto, cadastrado: false })),
     ...produtosCadastrados.map((produto) => ({
       id: produto.id,
       nome: produto.nome,
@@ -154,10 +147,7 @@ export default function CatalogoScreen() {
 
   function abrirProduto(id: string, cadastrado = false) {
     if (cadastrado) {
-      router.push({
-        pathname: '/produto2',
-        params: { id },
-      });
+      router.push({ pathname: '/produto2', params: { id } });
       return;
     }
 
@@ -220,16 +210,11 @@ export default function CatalogoScreen() {
             const estaFavoritado = favoritos.includes(produto.id);
 
             return (
-              <View
-                style={styles.cardProduto}
-                key={produto.id}
-              >
+              <View style={styles.cardProduto} key={produto.id}>
                 <TouchableOpacity
                   style={styles.areaImagem}
                   activeOpacity={0.8}
-                  onPress={() =>
-                    abrirProduto(produto.id, produto.cadastrado)
-                  }
+                  onPress={() => abrirProduto(produto.id, produto.cadastrado)}
                 >
                   <Image
                     source={produto.imagem}
@@ -248,9 +233,7 @@ export default function CatalogoScreen() {
                       abrirProduto(produto.id, produto.cadastrado)
                     }
                   >
-                    <Text style={styles.nomeProduto}>
-                      {produto.nome}
-                    </Text>
+                    <Text style={styles.nomeProduto}>{produto.nome}</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -259,11 +242,7 @@ export default function CatalogoScreen() {
                     onPress={() => favoritar(produto.id)}
                   >
                     <Ionicons
-                      name={
-                        estaFavoritado
-                          ? 'heart'
-                          : 'heart-outline'
-                      }
+                      name={estaFavoritado ? 'heart' : 'heart-outline'}
                       size={19}
                       color="#111111"
                     />
@@ -424,4 +403,4 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginTop: 1,
   },
-});
+})

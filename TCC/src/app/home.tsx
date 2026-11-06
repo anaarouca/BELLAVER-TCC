@@ -48,7 +48,7 @@ const maisVendidos = [
   },
   {
     id: '6',
-    nome: 'Conjunto Social Preto e Branco',
+    nome: 'Conjunto Social Preto & Branco',
     original: 'R$ 890,00',
     preco: 'R$ 597,00',
     imagem: require('../../assets/Img/ConjuntoSocialPreto.png'),
@@ -87,11 +87,8 @@ export default function HomeScreen() {
   const { favoritos, alternarFavorito } = useFavoritos();
 
   const isDesktop = width >= 768;
-  const margem = isDesktop ? 38 : 15;
+  const margem = isDesktop ? 38 : 18;
   const alturaBanner = isDesktop ? 280 : 180;
-
-  const larguraConteudo = Math.min(width, 1350) - margem * 2;
-  const larguraProduto = larguraConteudo * (isDesktop ? 0.315 : 0.48);
 
   function abrirCatalogo() {
     router.push('/catalogo');
@@ -107,7 +104,7 @@ export default function HomeScreen() {
           styles.secao,
           {
             marginHorizontal: margem,
-            marginBottom: isDesktop ? 38 : 28,
+            marginBottom: isDesktop ? 38 : 30,
           },
         ]}
       >
@@ -138,17 +135,21 @@ export default function HomeScreen() {
             <View
               style={[
                 styles.produto,
-                { width: isDesktop ? '31.5%' : '48%' },
+                {
+                  width: isDesktop ? '31.5%' : '48%',
+                },
               ]}
               key={produto.id}
             >
-              <TouchableOpacity onPress={abrirCatalogo}>
+              <TouchableOpacity
+                onPress={abrirCatalogo}
+                style={styles.areaImagem}
+              >
                 <Image
                   source={produto.imagem}
                   style={[
                     styles.imagemProduto,
                     {
-                      height: larguraProduto,
                       filter: 'grayscale(100%)',
                     } as any,
                   ]}
@@ -160,7 +161,7 @@ export default function HomeScreen() {
                 <Text
                   style={[
                     styles.nomeProduto,
-                    { fontSize: isDesktop ? 13 : 10 },
+                    { fontSize: isDesktop ? 13 : 11 },
                   ]}
                 >
                   {produto.nome}
@@ -176,7 +177,7 @@ export default function HomeScreen() {
                         ? 'heart'
                         : 'heart-outline'
                     }
-                    size={isDesktop ? 19 : 16}
+                    size={isDesktop ? 19 : 17}
                     color="#111111"
                   />
                 </TouchableOpacity>
@@ -185,7 +186,7 @@ export default function HomeScreen() {
               <Text
                 style={[
                   styles.precoOriginal,
-                  { fontSize: isDesktop ? 10 : 8 },
+                  { fontSize: isDesktop ? 10 : 9 },
                 ]}
               >
                 {produto.original}
@@ -194,7 +195,7 @@ export default function HomeScreen() {
               <Text
                 style={[
                   styles.preco,
-                  { fontSize: isDesktop ? 12 : 10 },
+                  { fontSize: isDesktop ? 12 : 11 },
                 ]}
               >
                 {produto.preco}
@@ -369,8 +370,8 @@ export default function HomeScreen() {
                     style={[
                       styles.imagemCategoria,
                       {
-                        width: isDesktop ? 105 : 65,
-                        height: isDesktop ? 105 : 65,
+                        width: isDesktop ? 105 : 75,
+                        height: isDesktop ? 105 : 75,
                         filter: 'grayscale(100%)',
                       } as any,
                     ]}
@@ -380,7 +381,7 @@ export default function HomeScreen() {
                   <Text
                     style={[
                       styles.nomeCategoria,
-                      { fontSize: isDesktop ? 12 : 9 },
+                      { fontSize: isDesktop ? 12 : 10 },
                     ]}
                   >
                     {categoria.nome}
@@ -406,58 +407,48 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-
   conteudo: {
     width: '100%',
     maxWidth: 1350,
     alignSelf: 'center',
   },
-
   cabecalho: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
   },
-
   espacoLateral: {
     width: 28,
   },
-
   marca: {
     alignItems: 'center',
     flex: 1,
   },
-
   logo: {
     color: '#111111',
     fontWeight: '300',
     letterSpacing: 6,
   },
-
   estabelecimento: {
     color: '#111111',
     fontSize: 11,
     marginTop: 6,
   },
-
   menu: {
     width: 28,
     alignItems: 'center',
   },
-
   linhaCabecalho: {
     height: 1,
     backgroundColor: '#AAAAAA',
     marginBottom: 35,
   },
-
   banner: {
     flexDirection: 'row',
     borderTopWidth: 1,
     borderColor: '#AAAAAA',
   },
-
   textoBanner: {
     width: '46%',
     justifyContent: 'center',
@@ -465,23 +456,19 @@ const styles = StyleSheet.create({
     paddingLeft: 9,
     paddingRight: 12,
   },
-
   newIn: {
     fontWeight: '600',
     color: '#111111',
   },
-
   desconto: {
     fontWeight: 'bold',
     color: '#111111',
     marginTop: 6,
   },
-
   subtituloBanner: {
     color: '#111111',
     marginTop: 7,
   },
-
   botaoComprar: {
     backgroundColor: '#000000',
     paddingVertical: 12,
@@ -490,114 +477,100 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
   },
-
   textoBotao: {
     color: '#FFFFFF',
     fontSize: 10,
   },
-
   imagemBanner: {
     width: '54%',
     height: '100%',
   },
-
   linhaBanner: {
     height: 1,
     backgroundColor: '#AAAAAA',
     marginBottom: 30,
   },
-
   secao: {},
-
   tituloSecao: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 14,
   },
-
   titulo: {
     color: '#111111',
     fontWeight: '600',
   },
-
   verTudo: {
     color: '#111111',
   },
-
   listaProdutos: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    rowGap: 20,
+    rowGap: 24,
   },
-
   produto: {
     minWidth: 0,
+    marginBottom: 2,
   },
-
+  areaImagem: {
+    width: '100%',
+    aspectRatio: 0.94,
+    overflow: 'hidden',
+    backgroundColor: '#F2F2F2',
+  },
   imagemProduto: {
     width: '100%',
-    backgroundColor: '#F5F5F5',
+    height: '100%',
   },
-
   linhaNome: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginTop: 8,
-    gap: 2,
+    marginTop: 7,
+    gap: 4,
   },
-
   nomeProduto: {
     flex: 1,
     color: '#111111',
-    lineHeight: 15,
+    lineHeight: 16,
   },
-
   botaoFavorito: {
-    paddingLeft: 2,
+    paddingLeft: 3,
     paddingBottom: 3,
   },
-
   precoOriginal: {
     color: '#999999',
     textDecorationLine: 'line-through',
-    marginTop: 5,
+    marginTop: 4,
   },
-
   preco: {
     color: '#111111',
     marginTop: 3,
   },
-
   secaoCategorias: {
     marginBottom: 35,
   },
-
   listaCategorias: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginTop: 12,
     gap: 10,
   },
-
   categoria: {
     flex: 1,
     alignItems: 'center',
   },
-
   imagemCategoria: {
     borderRadius: 100,
     backgroundColor: '#EEEEEE',
   },
-
   nomeCategoria: {
     color: '#111111',
     marginTop: 9,
     textAlign: 'center',
   },
-
   rodape: {
     minHeight: 45,
     backgroundColor: '#000000',
@@ -605,7 +578,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 8,
   },
-
   textoRodape: {
     color: '#FFFFFF',
     fontSize: 9,
