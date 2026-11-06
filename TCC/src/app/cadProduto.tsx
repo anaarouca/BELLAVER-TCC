@@ -178,7 +178,7 @@ export default function CadastroProdutoScreen() {
 
           <TouchableOpacity
             style={styles.menu}
-            onPress={() => Alert.alert('Menu', 'Menu do administrador')}
+            onPress={() => router.push('/menu')}
           >
             <View style={styles.linhaMenu} />
             <View style={styles.linhaMenu} />

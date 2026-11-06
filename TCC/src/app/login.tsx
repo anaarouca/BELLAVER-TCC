@@ -15,7 +15,6 @@ import {
 import { router } from 'expo-router';
 import {
   signInWithEmailAndPassword,
-  sendPasswordResetEmail,
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth';
@@ -123,35 +122,6 @@ export default function LoginScreen() {
     }
   }
 
-  // RECUPERAR SENHA
-  async function recuperarSenha() {
-    if (!email.trim()) {
-      Alert.alert(
-        'Recuperar senha',
-        'Digite seu e-mail no campo acima primeiro.'
-      );
-      return;
-    }
-
-    try {
-      await sendPasswordResetEmail(auth, email.trim());
-
-      Alert.alert(
-        'E-mail enviado',
-        'Se o endereço estiver cadastrado, você receberá as instruções para redefinir sua senha.'
-      );
-    } catch (erro: any) {
-      if (erro.code === 'auth/invalid-email') {
-        Alert.alert('Erro', 'Digite um e-mail válido.');
-      } else {
-        Alert.alert(
-          'Atenção',
-          'Não foi possível solicitar a recuperação. Confira o e-mail e tente novamente.'
-        );
-      }
-    }
-  }
-
   return (
     <ScrollView
       style={styles.container}
@@ -244,7 +214,14 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity onPress={recuperarSenha}>
+        <TouchableOpacity
+          onPress={() =>
+            router.push({
+              pathname: '/recuperar-senha',
+              params: { origem: 'login' },
+            })
+          }
+        >
           <Text style={styles.recuperar}>
             RECUPERAR SENHA
           </Text>

@@ -12,47 +12,76 @@ import {
   Alert,
   Image,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
+
+const CHAVE_AVALIACOES = "@bellaver/avaliacoes";
+
+type Avaliacao = {
+  produto: string;
+  nota: number;
+  comentario: string;
+  fotos: string[];
+  enviadaEm: string;
+};
 
 export default function AvaliarProduto() {
   const [nota, setNota] = useState(0);
   const [comentario, setComentario] = useState("");
   const [fotos, setFotos] = useState<string[]>([]);
+  const [enviando, setEnviando] = useState(false);
 
-  async function adicionarFoto() {
+  async function adicionarFoto(origem: "camera" | "galeria") {
     if (fotos.length >= 3) {
       Alert.alert("Limite atingido", "Você pode adicionar até 3 fotos.");
       return;
     }
 
-    const permissao =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    try {
+      const permissao =
+        origem === "camera"
+          ? await ImagePicker.requestCameraPermissionsAsync()
+          : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    if (!permissao.granted) {
+      if (!permissao.granted) {
+        Alert.alert(
+          "Permissão necessária",
+          origem === "camera"
+            ? "Permita o acesso à câmera para tirar uma foto."
+            : "Permita o acesso às fotos para escolher uma imagem."
+        );
+        return;
+      }
+
+      const opcoes = {
+        mediaTypes: ["images"] as ("images")[],
+        allowsEditing: true,
+        quality: 0.8,
+      };
+      const resultado =
+        origem === "camera"
+          ? await ImagePicker.launchCameraAsync(opcoes)
+          : await ImagePicker.launchImageLibraryAsync(opcoes);
+
+      if (!resultado.canceled && resultado.assets.length > 0) {
+        setFotos((fotosAtuais) => [...fotosAtuais, resultado.assets[0].uri]);
+      }
+    } catch (erro) {
+      console.error("Erro ao adicionar foto à avaliação:", erro);
       Alert.alert(
-        "Permissão necessária",
-        "Permita o acesso às fotos para escolher uma imagem."
+        "Não foi possível adicionar a foto",
+        "Tente novamente."
       );
-      return;
-    }
-
-    const resultado = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      quality: 0.8,
-    });
-
-    if (!resultado.canceled && resultado.assets.length > 0) {
-      setFotos([...fotos, resultado.assets[0].uri]);
     }
   }
 
   function removerFoto(index: number) {
-    setFotos(fotos.filter((_, i) => i !== index));
+    setFotos((fotosAtuais) => fotosAtuais.filter((_, i) => i !== index));
   }
 
-  function enviarAvaliacao() {
+  async function enviarAvaliacao() {
     if (nota === 0) {
       Alert.alert(
         "Avaliação incompleta",
@@ -61,14 +90,48 @@ export default function AvaliarProduto() {
       return;
     }
 
-    Alert.alert(
-      "Avaliação enviada!",
-      "Sua avaliação foi registrada nesta demonstração."
-    );
+    if (enviando) return;
 
-    setNota(0);
-    setComentario("");
-    setFotos([]);
+    const avaliacao: Avaliacao = {
+      produto: "Colete Alfaiataria Risca de Giz Hudson",
+      nota,
+      comentario: comentario.trim(),
+      fotos,
+      enviadaEm: new Date().toISOString(),
+    };
+
+    try {
+      setEnviando(true);
+      const dadosSalvos = await AsyncStorage.getItem(CHAVE_AVALIACOES);
+      const avaliacoesSalvas: unknown = dadosSalvos
+        ? JSON.parse(dadosSalvos)
+        : [];
+
+      if (!Array.isArray(avaliacoesSalvas)) {
+        throw new Error("Os dados de avaliações salvos estão inválidos.");
+      }
+
+      await AsyncStorage.setItem(
+        CHAVE_AVALIACOES,
+        JSON.stringify([...avaliacoesSalvas, avaliacao])
+      );
+
+      Alert.alert(
+        "Avaliação enviada!",
+        "Obrigado por avaliar sua compra."
+      );
+      setNota(0);
+      setComentario("");
+      setFotos([]);
+    } catch (erro) {
+      console.error("Erro ao salvar avaliação:", erro);
+      Alert.alert(
+        "Não foi possível enviar",
+        "Tente novamente em alguns instantes."
+      );
+    } finally {
+      setEnviando(false);
+    }
   }
 
   return (
@@ -80,9 +143,7 @@ export default function AvaliarProduto() {
         <View style={styles.cabecalho}>
           <TouchableOpacity
             style={styles.menu}
-            onPress={() =>
-              Alert.alert("Bellaver", "Menu do aplicativo")
-            }
+            onPress={() => router.push("/menu")}
           >
             <Ionicons
               name="menu-outline"
@@ -118,13 +179,11 @@ export default function AvaliarProduto() {
 
           {/* PRODUTO */}
           <View style={styles.produto}>
-            <View style={styles.fotoProduto}>
-              <Ionicons
-                name="shirt-outline"
-                size={45}
-                color="#888888"
-              />
-            </View>
+            <Image
+              source={require("../../assets/Img/ColeteAlfaiatariaRisca.png")}
+              style={styles.fotoProduto}
+              resizeMode="cover"
+            />
 
             <View style={styles.detalhesProduto}>
               <Text style={styles.nomeProduto}>
@@ -204,7 +263,17 @@ export default function AvaliarProduto() {
                       },
                     ]);
                   } else {
-                    adicionarFoto();
+                    Alert.alert("Adicionar foto", "Escolha como adicionar a foto.", [
+                      {
+                        text: "Tirar foto",
+                        onPress: () => adicionarFoto("camera"),
+                      },
+                      {
+                        text: "Escolher da galeria",
+                        onPress: () => adicionarFoto("galeria"),
+                      },
+                      { text: "Cancelar", style: "cancel" },
+                    ]);
                   }
                 }}
               >
@@ -235,9 +304,10 @@ export default function AvaliarProduto() {
             style={styles.botaoEnviar}
             onPress={enviarAvaliacao}
             activeOpacity={0.8}
+            disabled={enviando}
           >
             <Text style={styles.textoBotao}>
-              ENVIAR A AVALIAÇÃO
+              {enviando ? "ENVIANDO..." : "ENVIAR A AVALIAÇÃO"}
             </Text>
           </TouchableOpacity>
 
@@ -270,7 +340,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: "#888888",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-end",
+    paddingBottom: 8,
   },
 
   menu: {
@@ -300,7 +371,7 @@ const styles = StyleSheet.create({
 
   aviso: {
     alignItems: "center",
-    paddingTop: 32,
+    paddingTop: 36,
     paddingBottom: 31,
   },
 
@@ -319,27 +390,25 @@ const styles = StyleSheet.create({
   divisor: {
     height: 2,
     backgroundColor: "#888888",
-    marginBottom: 22,
+    marginBottom: 24,
+    marginRight: 8,
   },
 
   titulo: {
     fontSize: 20,
     fontWeight: "600",
     color: "#111111",
-    marginBottom: 16,
+    marginBottom: 13,
   },
 
   produto: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
   },
 
   fotoProduto: {
     width: 141,
     height: 146,
-    backgroundColor: "#F1F1F1",
-    alignItems: "center",
-    justifyContent: "center",
   },
 
   detalhesProduto: {
@@ -365,8 +434,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: 15,
-    marginTop: 31,
+    gap: 12,
+    marginTop: 20,
     marginBottom: 10,
   },
 
@@ -389,6 +458,7 @@ const styles = StyleSheet.create({
     padding: 8,
     fontSize: 13,
     color: "#111111",
+    marginHorizontal: 5,
   },
 
   contador: {
@@ -409,11 +479,11 @@ const styles = StyleSheet.create({
   listaFotos: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 15,
+    marginHorizontal: 6,
   },
 
   quadroFoto: {
-    flex: 1,
+    width: "29%",
     aspectRatio: 1,
     borderWidth: 1,
     borderColor: "#111111",

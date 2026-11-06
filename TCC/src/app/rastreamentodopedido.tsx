@@ -1,4 +1,5 @@
 
+
 import React from "react";
 import {
   View,
@@ -12,6 +13,7 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 
 export default function Rastreamento() {
   const pedido = {
@@ -68,9 +70,7 @@ export default function Rastreamento() {
         <View style={styles.cabecalho}>
           <TouchableOpacity
             style={styles.menu}
-            onPress={() =>
-              Alert.alert("Bellaver", "Menu do aplicativo")
-            }
+            onPress={() => router.push("/menu")}
           >
             <Ionicons
               name="menu-outline"

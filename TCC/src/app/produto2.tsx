@@ -24,6 +24,7 @@ import {
   removerProdutoCadastrado,
 } from '../data/produtosCadastrados';
 import { getUserRole } from '../auth/session';
+import { useFavoritos } from '../hooks/useFavoritos';
 
 export default function ProdutoCadastradoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -37,7 +38,7 @@ export default function ProdutoCadastradoScreen() {
   const [excluindo, setExcluindo] = useState(false);
   const [tamanhoSelecionado, setTamanhoSelecionado] = useState('');
   const [quantidade, setQuantidade] = useState('1');
-  const [favorito, setFavorito] = useState(false);
+  const { favoritos, alternarFavorito } = useFavoritos();
   const [isAdmin, setIsAdmin] = useState(false);
   const [modoEdicao, setModoEdicao] = useState(false);
   const [produtoEditando, setProdutoEditando] = useState<ProdutoCadastrado | null>(null);
@@ -170,6 +171,7 @@ export default function ProdutoCadastradoScreen() {
   }
 
   const produtoAtual = produto;
+  const favorito = favoritos.includes(produto.id);
   const precoOriginal = produto.precoOriginal.replace(/^R\$\s*/i, '').trim();
   const precoDesconto = produto.precoDesconto.replace(/^R\$\s*/i, '').trim();
 
@@ -328,7 +330,7 @@ export default function ProdutoCadastradoScreen() {
     return true;
   }
 
-  function adicionarCarrinho() {
+  function adicionarSacola() {
     if (validarCompra()) {
       Alert.alert(
         'Produto adicionado!',
@@ -555,7 +557,7 @@ export default function ProdutoCadastradoScreen() {
           <View style={styles.linhaNome}>
             <Text style={styles.nome}>{produto.nome}</Text>
             <TouchableOpacity
-              onPress={() => setFavorito((atual) => !atual)}
+              onPress={() => alternarFavorito(produto.id)}
               accessibilityLabel={
                 favorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos'
               }
@@ -620,11 +622,11 @@ export default function ProdutoCadastradoScreen() {
               styles.botaoPrincipal,
               produto.estoque === 0 && styles.botaoDesabilitado,
             ]}
-            onPress={adicionarCarrinho}
+            onPress={adicionarSacola}
             disabled={produto.estoque === 0}
             activeOpacity={0.8}
           >
-            <Text style={styles.textoBotao}>Adicionar ao carrinho</Text>
+            <Text style={styles.textoBotao}>Adicionar à Sacola</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[

@@ -9,7 +9,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import { sendPasswordResetEmail } from 'firebase/auth';
 
@@ -17,8 +17,13 @@ import { auth } from '../firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function RecuperarSenhaScreen() {
+  const { origem } = useLocalSearchParams<{ origem?: string }>();
   const [email, setEmail] = useState('');
   const [carregando, setCarregando] = useState(false);
+
+  function voltar() {
+    router.replace(origem === 'perfil' ? '/telaperfil' : '/login');
+  }
 
   async function enviarLink() {
     if (!email.trim()) {
@@ -40,7 +45,7 @@ export default function RecuperarSenhaScreen() {
         [
           {
             text: 'OK',
-            onPress: () => router.replace('/login'),
+            onPress: voltar,
           },
         ]
       );
@@ -64,7 +69,7 @@ export default function RecuperarSenhaScreen() {
 
       <TouchableOpacity
         style={styles.voltar}
-        onPress={() => router.replace('/login')}
+        onPress={voltar}
       >
         <Ionicons name="chevron-back" size={24} color="#111111" />
       </TouchableOpacity>
@@ -121,9 +126,11 @@ export default function RecuperarSenhaScreen() {
 
           <TouchableOpacity
             style={styles.botaoVoltar}
-            onPress={() => router.replace('/login')}
+            onPress={voltar}
           >
-            <Text style={styles.textoVoltar}>VOLTAR PARA LOGIN</Text>
+            <Text style={styles.textoVoltar}>
+              {origem === 'perfil' ? 'VOLTAR PARA CONFIGURAÇÃO' : 'VOLTAR PARA LOGIN'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>

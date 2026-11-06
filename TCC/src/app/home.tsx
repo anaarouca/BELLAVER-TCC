@@ -363,7 +363,13 @@ export default function HomeScreen() {
                 <TouchableOpacity
                   key={categoria.nome}
                   style={styles.categoria}
-                  onPress={abrirCatalogo}
+                  onPress={() =>
+                    router.push(
+                      categoria.nome === 'Masculino'
+                        ? '/catalogoMasculino'
+                        : '/catalogo'
+                    )
+                  }
                 >
                   <Image
                     source={categoria.imagem}

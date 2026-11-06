@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { listarProdutosCadastrados } from '../data/produtosCadastrados';
+import { useFavoritos } from '../hooks/useFavoritos';
 
 const produtos = [
   {
@@ -109,7 +110,7 @@ export default function Pesquisa() {
   const [pesquisa, setPesquisa] = useState('');
   const [recentes, setRecentes] = useState(pesquisasIniciais);
   const [mostrarRecentes, setMostrarRecentes] = useState(true);
-  const [favoritos, setFavoritos] = useState<string[]>([]);
+  const { favoritos, alternarFavorito } = useFavoritos();
   const [produtosCadastrados, setProdutosCadastrados] = useState<
     Awaited<ReturnType<typeof listarProdutosCadastrados>>
   >([]);
@@ -180,14 +181,6 @@ export default function Pesquisa() {
     });
   }
 
-  function alternarFavorito(id: string) {
-    if (favoritos.includes(id)) {
-      setFavoritos(favoritos.filter((item) => item !== id));
-    } else {
-      setFavoritos([...favoritos, id]);
-    }
-  }
-
   function abrirFiltros() {
     router.push('/filtroPesquisa');
   }
@@ -208,7 +201,7 @@ export default function Pesquisa() {
         <View style={styles.cabecalho}>
           <TouchableOpacity
             style={styles.menu}
-            onPress={() => Alert.alert('Menu', 'Menu de navegação')}
+            onPress={() => router.push('/menu')}
           >
             <View style={styles.linhaMenu} />
             <View style={styles.linhaMenu} />

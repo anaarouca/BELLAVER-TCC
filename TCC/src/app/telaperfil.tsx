@@ -20,32 +20,16 @@ export default function Configuracao() {
     {
       titulo: "Dados pessoais",
       icone: "person-outline" as const,
-      acao: () => abrirPagina("Dados pessoais"),
+      acao: () => router.push("/dadospessoais"),
     },
     {
       titulo: "Alterar senha",
       icone: "lock-closed-outline" as const,
-      acao: () => abrirPagina("Alterar senha"),
-    },
-    {
-      titulo: "Notificação",
-      icone: "notifications-outline" as const,
-      acao: () => abrirPagina("Notificação"),
-    },
-    {
-      titulo: "Privacidade",
-      icone: "lock-closed-outline" as const,
-      acao: () => abrirPagina("Privacidade"),
-    },
-    {
-      titulo: "Ajudar o suporte",
-      icone: "headset-outline" as const,
-      acao: () => abrirPagina("Ajudar o suporte"),
-    },
-    {
-      titulo: "Sobre o aplicativo",
-      icone: "help-circle-outline" as const,
-      acao: () => abrirPagina("Sobre o aplicativo"),
+      acao: () =>
+        router.push({
+          pathname: "/recuperar-senha",
+          params: { origem: "perfil" },
+        }),
     },
   ];
 
@@ -92,13 +76,14 @@ export default function Configuracao() {
             <Text style={styles.ano}>EST. 1972</Text>
 
             <TouchableOpacity
-              style={styles.botaoSairTopo}
-              onPress={sair}
-              accessibilityLabel="Sair da conta"
+              style={styles.botaoVoltar}
+              onPress={() => router.replace("/menu")}
+              accessibilityRole="button"
+              accessibilityLabel="Voltar"
             >
               <Ionicons
-                name="log-out-outline"
-                size={25}
+                name="arrow-back-outline"
+                size={20}
                 color="#111111"
               />
             </TouchableOpacity>
@@ -192,11 +177,11 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
 
-  botaoSairTopo: {
+  botaoVoltar: {
     position: "absolute",
-    right: 5,
-    top: 25,
-    padding: 3,
+    left: 0,
+    bottom: 14,
+    padding: 5,
   },
 
   secao: {
@@ -204,6 +189,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderBottomWidth: 1,
     borderBottomColor: "#BBBBBB",
+    paddingTop: 10,
   },
 
   titulo: {
@@ -215,6 +201,7 @@ const styles = StyleSheet.create({
 
   lista: {
     width: "100%",
+    marginTop: 10,
   },
 
   item: {
@@ -238,7 +225,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 10,
+    marginTop: 30,
   },
 
   textoBotaoSair: {

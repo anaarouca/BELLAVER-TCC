@@ -82,7 +82,7 @@ export default function Filtros() {
           <TouchableOpacity
             style={styles.menuButton}
             activeOpacity={0.7}
-            onPress={() => {}}
+            onPress={() => router.push('/menu')}
           >
             <View style={styles.linhaMenu} />
             <View style={styles.linhaMenu} />

@@ -12,12 +12,14 @@ import {
   TextInput,
 } from 'react-native';
 import { router } from 'expo-router';
+import { useFavoritos } from '../hooks/useFavoritos';
 
 export default function ProdutoScreen() {
   const [tamanho, setTamanho] = useState('36');
   const [quantidade, setQuantidade] = useState('1');
-  const [favorito, setFavorito] = useState(false);
   const [imagemAtual, setImagemAtual] = useState(0);
+  const { favoritos, alternarFavorito } = useFavoritos();
+  const favorito = favoritos.includes('9');
 
   const tamanhos = ['36', '38', '40', '42'];
 
@@ -30,7 +32,7 @@ export default function ProdutoScreen() {
   const descricao =
     'Conjunto de três peças em alfaiataria premium. Blazer oversized estruturado, calça pantalona de cintura alta e camisa em tricotine acetinada Rose Quartz. Design de linhas precisas que une a sobriedade do cinza à energia da cor. O novo padrão da autoridade feminina.';
 
-  function adicionarCarrinho() {
+  function adicionarSacola() {
     if (!tamanho) {
       Alert.alert('Atenção', 'Selecione um tamanho.');
       return;
@@ -84,7 +86,7 @@ export default function ProdutoScreen() {
 
           <TouchableOpacity
             style={styles.menu}
-            onPress={() => router.back()}
+            onPress={() => router.push('/menu')}
           >
             <View style={styles.linhaMenu} />
             <View style={styles.linhaMenu} />
@@ -132,7 +134,13 @@ export default function ProdutoScreen() {
               Tailleur Cinza & Rose Quartz | Ana Paula Renault Edition
             </Text>
 
-            <TouchableOpacity onPress={() => setFavorito(!favorito)}>
+            <TouchableOpacity
+              onPress={() => alternarFavorito('9')}
+              accessibilityRole="button"
+              accessibilityLabel={
+                favorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos'
+              }
+            >
               <Text style={styles.coracao}>
                 {favorito ? '♥' : '♡'}
               </Text>
@@ -187,10 +195,10 @@ export default function ProdutoScreen() {
         {/* BOTÕES */}
         <TouchableOpacity
           style={styles.botaoPrincipal}
-          onPress={adicionarCarrinho}
+          onPress={adicionarSacola}
           activeOpacity={0.8}
         >
-          <Text style={styles.textoBotao}>Adicionar ao carrinho</Text>
+          <Text style={styles.textoBotao}>Adicionar à Sacola</Text>
         </TouchableOpacity>
 
         <TouchableOpacity

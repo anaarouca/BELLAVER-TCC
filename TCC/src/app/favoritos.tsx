@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -14,98 +14,176 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useFavoritos } from '../hooks/useFavoritos';
+import {
+  listarProdutosCadastrados,
+  ProdutoCadastrado,
+} from '../data/produtosCadastrados';
 
-type Produto = {
+type ProdutoFavorito = {
   id: string;
   nome: string;
-  marca: string;
+  precoOriginal: string;
   preco: string;
-  precoAntigo: string;
   imagem: ImageSourcePropType;
+  cadastrado?: boolean;
 };
 
-const produtosDisponiveis: Produto[] = [
+const produtosDisponiveis: ProdutoFavorito[] = [
   {
     id: '1',
-    nome: 'Blusa em organza Branco',
-    marca: 'Bellaver',
+    nome: 'Blusa em organza de seda Branco',
+    precoOriginal: 'R$ 890,00',
     preco: 'R$ 760,00',
-    precoAntigo: 'R$ 890,00',
     imagem: require('../../assets/Img/BlusaEmOrganza.png'),
   },
   {
     id: '2',
-    nome: 'Set Denim Grand Icon Azul',
-    marca: 'Bellaver',
+    nome: 'Set Denim Grand Icon Azul Gisele Edition',
+    precoOriginal: 'R$ 1.480,00',
     preco: 'R$ 1.197,00',
-    precoAntigo: 'R$ 1.480,00',
     imagem: require('../../assets/Img/SetDenimGrand.png'),
   },
   {
     id: '3',
     nome: 'Gown Saint Tropez Branco',
-    marca: 'Bellaver',
+    precoOriginal: 'R$ 1.280,00',
     preco: 'R$ 897,00',
-    precoAntigo: 'R$ 1.280,00',
     imagem: require('../../assets/Img/GownSaint.png'),
   },
   {
     id: '4',
     nome: 'Trench Coat Alfaiataria Preto',
-    marca: 'Bellaver',
-    preco: 'R$ 3.200,00',
-    precoAntigo: 'R$ 4.290,00',
+    precoOriginal: 'R$ 3.500,00',
+    preco: 'R$ 320,00',
     imagem: require('../../assets/Img/TrenchCoatAlfaiataria.png'),
   },
   {
     id: '5',
     nome: 'Vestido Longo Azul-Marinho',
-    marca: 'Bellaver',
+    precoOriginal: 'R$ 1.140,00',
     preco: 'R$ 897,00',
-    precoAntigo: 'R$ 1.490,00',
     imagem: require('../../assets/Img/VestidoLongoAzul.png'),
   },
   {
     id: '6',
-    nome: 'Conjunto Social Preto & Branco',
-    marca: 'Bellaver',
+    nome: 'Conjunto Social Preto e Branco',
+    precoOriginal: 'R$ 780,00',
     preco: 'R$ 597,00',
-    precoAntigo: 'R$ 890,00',
     imagem: require('../../assets/Img/ConjuntoSocialPreto.png'),
   },
   {
     id: '7',
     nome: 'Conjunto Alfaiataria Off-White',
-    marca: 'Bellaver',
+    precoOriginal: 'R$ 899,00',
     preco: 'R$ 697,00',
-    precoAntigo: 'R$ 899,00',
     imagem: require('../../assets/Img/ConjuntoAlfaiatariaOff.png'),
   },
   {
     id: '8',
     nome: 'Colete Alfaiataria Risca de Giz Hudson',
-    marca: 'Bellaver',
+    precoOriginal: 'R$ 389,00',
     preco: 'R$ 297,00',
-    precoAntigo: 'R$ 389,00',
     imagem: require('../../assets/Img/ColeteAlfaiatariaRisca.png'),
   },
   {
     id: '9',
-    nome: 'Tailleur Cinza & Rose Quartz',
-    marca: 'Bellaver',
+    nome: 'Tailleur Cinza & Rose Quartz | Ana Paula Renault',
+    precoOriginal: 'R$ 780,00',
     preco: 'R$ 597,00',
-    precoAntigo: 'R$ 780,00',
     imagem: require('../../assets/Img/TailleurCinzaRose.png'),
   },
   {
     id: '10',
     nome: 'Set Denim Grand Icon Azul Gisele Edition',
-    marca: 'Bellaver',
+    precoOriginal: 'R$ 1.480,00',
     preco: 'R$ 1.197,00',
-    precoAntigo: 'R$ 1.480,00',
     imagem: require('../../assets/Img/SetDenimGrand.png'),
+  },
+  {
+    id: 'masc1',
+    nome: 'Blusa Élégance em Seda Off-White',
+    precoOriginal: 'R$ 499,90',
+    preco: 'R$ 349,90',
+    imagem: require('../../assets/Img/BlusaÉlégance.png'),
+  },
+  {
+    id: 'masc2',
+    nome: 'Jaqueta Grand Icon Denim Marrom',
+    precoOriginal: 'R$ 1.090,00',
+    preco: 'R$ 829,90',
+    imagem: require('../../assets/Img/JaquetaGrand.png'),
+  },
+  {
+    id: 'masc3',
+    nome: 'Suéter Saint Laurent Azul Marinho',
+    precoOriginal: 'R$ 699,00',
+    preco: 'R$ 529,90',
+    imagem: require('../../assets/Img/SuéterSaint.png'),
+  },
+  {
+    id: 'masc4',
+    nome: 'Trench Coat Milano Alfaiataria Preto',
+    precoOriginal: 'R$ 1.309,00',
+    preco: 'R$ 1.049,90',
+    imagem: require('../../assets/Img/TrenchMasculino.png'),
+  },
+  {
+    id: 'masc5',
+    nome: 'Casaco Heritage Cinza',
+    precoOriginal: 'R$ 849,00',
+    preco: 'R$ 679,90',
+    imagem: require('../../assets/Img/CasacoHeritage.png'),
+  },
+  {
+    id: 'masc6',
+    nome: 'Camisa Social Azul-Claro',
+    precoOriginal: 'R$ 429,90',
+    preco: 'R$ 319,90',
+    imagem: require('../../assets/Img/CamisaSocial.png'),
+  },
+  {
+    id: 'bellahope-bolsa-saint-laurent',
+    nome: 'Bolsa Saint Laurent Élégance',
+    precoOriginal: 'R$ 4.990,00',
+    preco: 'R$ 4.990,00',
+    imagem: require('../../assets/Img/bellahopeImg/BolsaSaintLaurent.png'),
+  },
+  {
+    id: 'bellahope-sandalia-gisele-grand',
+    nome: 'Sandália Gisele Grand Icon',
+    precoOriginal: 'R$ 1.197,00',
+    preco: 'R$ 1.197,00',
+    imagem: require('../../assets/Img/bellahopeImg/SandáliaGiseleGrand.png'),
+  },
+  {
+    id: 'bellahope-casaco-saint-tropez',
+    nome: 'Casaco Saint Tropez Heritage',
+    precoOriginal: 'R$ 897,00',
+    preco: 'R$ 897,00',
+    imagem: require('../../assets/Img/bellahopeImg/CasacoSaintTropez.png'),
+  },
+  {
+    id: 'bellahope-bota-alfaiataria-noir',
+    nome: 'Bota Alfaiataria Noir',
+    precoOriginal: 'R$ 320,00',
+    preco: 'R$ 320,00',
+    imagem: require('../../assets/Img/bellahopeImg/BotaAlfaitariaNoir.png'),
+  },
+  {
+    id: 'bellahope-blazer-grand-lapel',
+    nome: 'Blazer Alfaiataria Grand Lapel',
+    precoOriginal: 'R$ 897,00',
+    preco: 'R$ 897,00',
+    imagem: require('../../assets/Img/bellahopeImg/BlazerAlfaitariaGrandLapel.png'),
+  },
+  {
+    id: 'bellahope-relogio-fifth-avenue',
+    nome: 'Relógio Fifth Avenue Classic',
+    precoOriginal: 'R$ 597,00',
+    preco: 'R$ 597,00',
+    imagem: require('../../assets/Img/bellahopeImg/RelógioFifthAvenue.png'),
   },
 ];
 
@@ -114,26 +192,56 @@ export default function FavoritosScreen() {
   const { favoritos, alternarFavorito } = useFavoritos();
 
   const [itensSacola, setItensSacola] = useState(2);
-  const [editando, setEditando] = useState(false);
+  const [produtosCadastrados, setProdutosCadastrados] = useState<
+    ProdutoCadastrado[]
+  >([]);
 
   const isDesktop = width >= 768;
+  const produtos = [
+    ...produtosDisponiveis,
+    ...produtosCadastrados.map((produto) => ({
+      id: produto.id,
+      nome: produto.nome,
+      precoOriginal: produto.precoOriginal,
+      preco: produto.precoDesconto,
+      imagem: { uri: produto.imagens[0] },
+      cadastrado: true,
+    })),
+  ].filter((produto) => favoritos.includes(produto.id));
 
-  const produtos = produtosDisponiveis.filter((produto) =>
-    favoritos.includes(produto.id)
-  );
-
-  function removerFavorito(id: string) {
-    alternarFavorito(id);
-  }
-
-  function adicionarSacola(produto: Produto) {
+  function adicionarSacola(produto: (typeof produtos)[number]) {
     setItensSacola((quantidade) => quantidade + 1);
-
     Alert.alert(
       'Produto adicionado',
       `${produto.nome} foi adicionado à sua sacola.`
     );
   }
+
+  useFocusEffect(
+    useCallback(() => {
+      let ativo = true;
+
+      listarProdutosCadastrados()
+        .then((produtosSalvos) => {
+          if (ativo) {
+            setProdutosCadastrados(produtosSalvos);
+          }
+        })
+        .catch((erro: unknown) => {
+          console.error('Erro ao carregar produtos favoritos:', erro);
+          Alert.alert(
+            'Erro ao carregar favoritos',
+            erro instanceof Error
+              ? erro.message
+              : 'Não foi possível carregar os produtos cadastrados.'
+          );
+        });
+
+      return () => {
+        ativo = false;
+      };
+    }, [])
+  );
 
   return (
     <SafeAreaView style={styles.tela}>
@@ -208,194 +316,153 @@ export default function FavoritosScreen() {
               <Text
                 style={[styles.textoAba, styles.textoAbaAtivo]}
               >
-                FAVORITOS ({produtos.length})
+                FAVORITOS ({favoritos.length})
               </Text>
             </TouchableOpacity>
           </View>
 
-          {produtos.length === 0 ? (
-            <View style={styles.vazio}>
-              <Ionicons
-                name="heart-outline"
-                size={44}
-                color="#888888"
-              />
-
-              <Text style={styles.textoVazio}>
-                Você ainda não tem favoritos.
+          <View style={styles.cabecalhoFavoritos}>
+            <View style={styles.titulos}>
+              <Text
+                style={[
+                  styles.titulo,
+                  { fontSize: isDesktop ? 23 : 20 },
+                ]}
+              >
+                Meus Favoritos
               </Text>
 
-              <TouchableOpacity
-                style={styles.botaoExplorarVazio}
-                onPress={() => router.push('/catalogo')}
-              >
-                <Text style={styles.textoBotaoExplorar}>
-                  EXPLORAR PRODUTOS
-                </Text>
-              </TouchableOpacity>
+              <Text style={styles.subtitulo}>
+                Você salvou {favoritos.length} itens
+              </Text>
             </View>
-          ) : (
-            <>
-              <View style={styles.cabecalhoFavoritos}>
-                <View style={styles.titulos}>
-                  <Text
-                    style={[
-                      styles.titulo,
-                      { fontSize: isDesktop ? 23 : 20 },
-                    ]}
-                  >
-                    Meus Favoritos
-                  </Text>
+          </View>
 
-                  <Text style={styles.subtitulo}>
-                    Você salvou {produtos.length} itens
-                  </Text>
-                </View>
-
-                <TouchableOpacity
-                  style={styles.botaoEditar}
-                  onPress={() => setEditando(!editando)}
-                  activeOpacity={0.8}
+          {produtos.length > 0 ? (
+            <View
+              style={[
+                styles.grade,
+                {
+                  marginHorizontal: 20,
+                  columnGap: 0,
+                },
+              ]}
+            >
+              {produtos.map((produto) => (
+                <View
+                  key={produto.id}
+                  style={[
+                    styles.cardProduto,
+                    { width: '48%' },
+                  ]}
                 >
-                  <Text style={styles.textoEditar}>
-                    {editando ? 'Concluir' : 'Editar'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <View
-                style={[
-                  styles.grade,
-                  {
-                    paddingHorizontal: isDesktop ? 10 : 4,
-                    columnGap: isDesktop ? 18 : 0,
-                  },
-                ]}
-              >
-                {produtos.map((produto) => (
-                  <View
-                    key={produto.id}
-                    style={[
-                      styles.cardProduto,
-                      {
-                        width: isDesktop ? '23.5%' : '48%',
-                      },
-                    ]}
+                  <TouchableOpacity
+                    style={styles.containerImagem}
+                    onPress={() =>
+                      produto.cadastrado
+                        ? router.push({
+                            pathname: '/produto2',
+                            params: { id: produto.id },
+                          })
+                        : router.push('/catalogo')
+                    }
+                    activeOpacity={0.8}
                   >
-                    <TouchableOpacity
-                      onPress={() => router.push('/catalogo')}
-                      style={styles.containerImagem}
-                    >
-                      <Image
-                        source={produto.imagem}
-                        style={[
-                          styles.imagemProduto,
-                          { filter: 'grayscale(100%)' } as any,
-                        ]}
-                        resizeMode="cover"
-                      />
-                    </TouchableOpacity>
+                    <Image
+                      source={produto.imagem}
+                      style={styles.imagemProduto}
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
 
-                    <View style={styles.linhaNome}>
-                      <Text
-                        style={[
-                          styles.nomeProduto,
-                          { fontSize: isDesktop ? 13 : 11 },
-                        ]}
-                        numberOfLines={2}
-                      >
-                        {produto.nome}
-                      </Text>
-
-                      <TouchableOpacity
-                        style={styles.botaoCoracao}
-                        onPress={() =>
-                          removerFavorito(produto.id)
-                        }
-                      >
-                        <Ionicons
-                          name="heart"
-                          size={isDesktop ? 19 : 17}
-                          color="#000000"
-                        />
-                      </TouchableOpacity>
-                    </View>
-
-                    <Text style={styles.precoAntigo}>
-                      {produto.precoAntigo}
-                    </Text>
-
+                  <View style={styles.linhaNome}>
                     <Text
                       style={[
-                        styles.preco,
+                        styles.nomeProduto,
                         { fontSize: isDesktop ? 13 : 11 },
                       ]}
+                      numberOfLines={2}
                     >
-                      {produto.preco}
+                      {produto.nome}
                     </Text>
 
                     <TouchableOpacity
-                      style={styles.botaoSacola}
-                      onPress={() => adicionarSacola(produto)}
-                      activeOpacity={0.8}
+                      style={styles.botaoCoracao}
+                      onPress={() => alternarFavorito(produto.id)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remover ${produto.nome} dos favoritos`}
                     >
-                      <Text style={styles.textoBotaoSacola}>
-                        Adicionar ao carrinho
-                      </Text>
+                      <Ionicons
+                        name="heart"
+                        size={isDesktop ? 19 : 17}
+                        color="#000000"
+                      />
                     </TouchableOpacity>
-
-                    {editando && (
-                      <TouchableOpacity
-                        style={styles.botaoRemover}
-                        onPress={() =>
-                          removerFavorito(produto.id)
-                        }
-                      >
-                        <Text style={styles.textoRemover}>
-                          Remover dos favoritos
-                        </Text>
-                      </TouchableOpacity>
-                    )}
                   </View>
-                ))}
-              </View>
 
-              <View
-                style={[
-                  styles.banner,
-                  {
-                    marginHorizontal: isDesktop ? 10 : 4,
-                  },
-                ]}
-              >
-                <Ionicons
-                  name="heart-outline"
-                  size={30}
-                  color="#000000"
-                />
-
-                <View style={styles.textosBanner}>
-                  <Text style={styles.tituloBanner}>
-                    Ainda não encontrou tudo?
+                  <Text style={styles.precoOriginal}>
+                    {produto.precoOriginal}
+                  </Text>
+                  <Text style={styles.precoAntigo}>
+                    {produto.preco}
                   </Text>
 
-                  <Text style={styles.subtituloBanner}>
-                    Tem muita coisa nova te esperando.
-                  </Text>
+                  <TouchableOpacity
+                    style={styles.botaoSacola}
+                    onPress={() => adicionarSacola(produto)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.textoBotaoSacola}>
+                      Adicionar à Sacola
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.botaoRemover}
+                    onPress={() => alternarFavorito(produto.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remover ${produto.nome} dos favoritos`}
+                  >
+                    <Text style={styles.textoRemover}>
+                      Remover dos favoritos
+                    </Text>
+                  </TouchableOpacity>
                 </View>
-
-                <TouchableOpacity
-                  style={styles.botaoExplorar}
-                  onPress={() => router.push('/catalogo')}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.textoExplorar}>
-                    Explorar produtos
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.textoVazio}>
+              Você ainda não tem favoritos.
+            </Text>
           )}
+
+          <View style={styles.banner}>
+            <Ionicons
+              name="heart-outline"
+              size={30}
+              color="#000000"
+            />
+
+            <View style={styles.textosBanner}>
+              <Text style={styles.tituloBanner}>
+                Ainda não encontrou tudo?
+              </Text>
+
+              <Text style={styles.subtituloBanner}>
+                Tem muita coisa nova te esperando.
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.botaoExplorar}
+              onPress={() => router.push('/catalogo')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.textoExplorar}>
+                Explorar produtos
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.espacoFinal} />
         </View>
@@ -492,38 +559,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  vazio: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 65,
-    paddingBottom: 75,
-  },
-
-  textoVazio: {
-    color: '#888888',
-    fontSize: 13,
-    marginTop: 17,
-  },
-
-  botaoExplorarVazio: {
-    backgroundColor: '#000000',
-    paddingHorizontal: 22,
-    paddingVertical: 12,
-    marginTop: 22,
-  },
-
-  textoBotaoExplorar: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    letterSpacing: 1,
-  },
-
   cabecalhoFavoritos: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 30,
-    marginBottom: 25,
+    marginTop: 24,
+    marginBottom: 0,
     paddingHorizontal: 22,
   },
 
@@ -542,25 +583,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  botaoEditar: {
-    width: 75,
-    height: 28,
-    backgroundColor: '#000000',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 10,
-  },
-
-  textoEditar: {
-    fontSize: 11,
-    color: '#FFFFFF',
-  },
-
   grade: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     rowGap: 28,
+    marginTop: 18,
   },
 
   cardProduto: {
@@ -570,7 +598,7 @@ const styles = StyleSheet.create({
 
   containerImagem: {
     width: '100%',
-    aspectRatio: 0.82,
+    aspectRatio: 0.97,
     overflow: 'hidden',
     backgroundColor: '#F2F2F2',
   },
@@ -584,8 +612,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginTop: 8,
-    minHeight: 32,
+    marginTop: 5,
+    minHeight: 28,
     gap: 5,
   },
 
@@ -595,29 +623,30 @@ const styles = StyleSheet.create({
     color: '#111111',
   },
 
+  precoOriginal: {
+    fontSize: 9,
+    color: '#AAAAAA',
+    textDecorationLine: 'line-through',
+    marginTop: 1,
+  },
+
   botaoCoracao: {
     paddingLeft: 3,
     paddingBottom: 3,
   },
 
   precoAntigo: {
-    fontSize: 9,
-    color: '#AAAAAA',
-    textDecorationLine: 'line-through',
-    marginTop: 3,
-  },
-
-  preco: {
+    fontSize: 10,
     color: '#111111',
-    marginTop: 3,
+    marginTop: 0,
   },
 
   botaoSacola: {
-    minHeight: 32,
+    minHeight: 20,
     backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 9,
+    marginTop: 5,
     paddingHorizontal: 4,
   },
 
@@ -628,8 +657,8 @@ const styles = StyleSheet.create({
 
   botaoRemover: {
     alignSelf: 'center',
-    paddingTop: 9,
-    paddingBottom: 3,
+    paddingTop: 5,
+    paddingBottom: 0,
   },
 
   textoRemover: {
@@ -638,14 +667,23 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 
+  textoVazio: {
+    alignSelf: 'center',
+    color: '#888888',
+    fontSize: 13,
+    marginTop: 32,
+  },
+
   banner: {
-    minHeight: 65,
+    width: '80%',
+    minHeight: 46,
+    alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F2F2F2',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    marginTop: 35,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginTop: 28,
   },
 
   textosBanner: {
@@ -666,9 +704,9 @@ const styles = StyleSheet.create({
 
   botaoExplorar: {
     backgroundColor: '#DEDEDE',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginLeft: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+    marginLeft: 6,
   },
 
   textoExplorar: {

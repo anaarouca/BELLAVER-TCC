@@ -38,14 +38,19 @@ export default function Categoria() {
         </View>
 
         {/* Título da seção */}
-        <TouchableOpacity style={styles.categoryHeader}>
+        <View style={styles.categoryHeader}>
           <Text style={styles.categoryTitle}>CATEGORIA</Text>
-          <Text style={styles.searchIcon}>⌕</Text>
-        </TouchableOpacity>
+        </View>
 
         {/* Categorias */}
         <View style={styles.categories}>
-          <TouchableOpacity style={styles.categoryCard}>
+          <TouchableOpacity
+            style={styles.categoryCard}
+            onPress={() => router.push('/catalogo')}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Abrir catálogo feminino"
+          >
             <Image
               source={require('../../assets/Img/Feminino.png')}
               style={styles.image}
@@ -56,7 +61,13 @@ export default function Categoria() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.categoryCard}>
+          <TouchableOpacity
+            style={styles.categoryCard}
+            onPress={() => router.push('/catalogoMasculino')}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Abrir catálogo masculino"
+          >
             <Image
               source={require('../../assets/Img/Masculino.png')}
               style={styles.image}
@@ -91,7 +102,13 @@ export default function Categoria() {
         </View>
 
         {/* Bellahope */}
-        <TouchableOpacity style={styles.bellahopeCard}>
+        <TouchableOpacity
+          style={styles.bellahopeCard}
+          onPress={() => router.push('/splash2')}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir Bella Hope"
+        >
           <Image
             source={require('../../assets/Img/BellahopeCapa.png')}
             style={styles.bellahopeImage}
@@ -156,6 +173,7 @@ const styles = StyleSheet.create({
   categoryHeader: {
     height: 36,
     marginHorizontal: 10,
+    marginTop: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -166,13 +184,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#999999',
     letterSpacing: 0.5,
-  },
-
-  searchIcon: {
-    position: 'absolute',
-    right: 10,
-    fontSize: 22,
-    color: '#222222',
   },
 
   categories: {

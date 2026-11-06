@@ -37,7 +37,7 @@ export default function MensagemProdutoScreen() {
           onPress={verProduto}
           activeOpacity={0.8}
         >
-          <Text style={styles.textoBotao}>Ver produto</Text>
+          <Text style={styles.textoBotao}>Ir para o catálogo</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -45,7 +45,6 @@ export default function MensagemProdutoScreen() {
           onPress={() => router.replace('/catalogo')}
           activeOpacity={0.8}
         >
-          <Text style={styles.textoSecundario}>Ir para o catálogo</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -59,15 +58,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 25,
   },
   marca: {
-    height: 110,
+    height: 130,
+    marginHorizontal: 4,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: 18,
+    borderBottomWidth: 2,
+    borderBottomColor: '#888888',
   },
   logo: {
     color: '#111111',
     fontSize: 27,
     fontWeight: '300',
     letterSpacing: 6,
+    marginTop: 9,
   },
   estabelecimento: {
     color: '#111111',

@@ -11,6 +11,7 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -107,6 +108,7 @@ export default function DadosPessoais() {
     return (
       <View style={styles.grupo}>
         <Text style={styles.label}>{titulo}</Text>
+
         <TextInput
           style={styles.input}
           value={valor}
@@ -114,7 +116,9 @@ export default function DadosPessoais() {
           placeholder={placeholder}
           placeholderTextColor="#999999"
           keyboardType={teclado}
-          autoCapitalize={teclado === "email-address" ? "none" : "words"}
+          autoCapitalize={
+            teclado === "email-address" ? "none" : "words"
+          }
         />
       </View>
     );
@@ -122,67 +126,165 @@ export default function DadosPessoais() {
 
   return (
     <SafeAreaView style={styles.tela}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="#FFFFFF"
+      />
 
       <View style={styles.container}>
+
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.conteudo}
         >
+
+          {/* CABEÇALHO */}
+
           <View style={styles.cabecalho}>
+
             <TouchableOpacity
               style={styles.voltar}
               onPress={() => router.back()}
             >
-              <Ionicons name="arrow-back" size={24} color="#111111" />
+              <Ionicons
+                name="arrow-back"
+                size={20}
+                color="#111111"
+              />
             </TouchableOpacity>
 
             <Text style={styles.logo}>BELLAVER</Text>
+
             <Text style={styles.ano}>EST. 1972</Text>
+
           </View>
 
-          <View style={styles.tituloContainer}>
-            <Text style={styles.titulo}>Dados pessoais</Text>
-            <Text style={styles.subtitulo}>
-              Mantenha suas informações atualizadas.
-            </Text>
-          </View>
+          <View style={styles.linha} />
 
-          <View style={styles.formulario}>
-            {campo("Nome completo *", nome, setNome, "Seu nome completo")}
-            {campo("E-mail *", email, setEmail, "Seu e-mail", "email-address")}
-            {campo("Telefone *", telefone, setTelefone, "(00) 00000-0000", "phone-pad")}
-            {campo("CEP *", cep, setCep, "00000-000", "phone-pad")}
-            {campo("Rua *", rua, setRua, "Nome da rua")}
-            {campo("Número *", numero, setNumero, "Número do endereço", "phone-pad")}
-            {campo("Complemento", complemento, setComplemento, "Apartamento, bloco...")}
-            {campo("Bairro *", bairro, setBairro, "Seu bairro")}
-            {campo("Cidade *", cidade, setCidade, "Sua cidade")}
-            {campo("Estado *", estado, setEstado, "Ex: SP")}
-          </View>
+          {/* SUBTÍTULO */}
 
-          <TouchableOpacity
-            style={styles.botao}
-            onPress={salvarDados}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.textoBotao}>SALVAR ALTERAÇÕES</Text>
+          <Text style={styles.subtitulo}>
+            PAINEL DO ADMINISTRADOR
+          </Text>
+
+          {/* FOTO */}
+
+          <TouchableOpacity style={styles.foto}>
+            <Text style={styles.textoFoto}>Foto</Text>
           </TouchableOpacity>
 
-          <Text style={styles.observacao}>
-            * Campos obrigatórios
+          {/* FORMULÁRIO */}
+
+          <View style={styles.formulario}>
+
+            {campo(
+              "Nome",
+              nome,
+              setNome,
+              "Digite Seu Nome..."
+            )}
+
+            {campo(
+              "E-mail",
+              email,
+              setEmail,
+              "Digite Seu E-mail...",
+              "email-address"
+            )}
+
+            {campo(
+              "Telefone Celular",
+              telefone,
+              setTelefone,
+              "Digite Seu Celular...",
+              "phone-pad"
+            )}
+
+            {campo(
+              "CEP",
+              cep,
+              setCep,
+              "Digite Seu CEP...",
+              "phone-pad"
+            )}
+
+            {campo(
+              "Rua",
+              rua,
+              setRua,
+              "Digite Sua Rua..."
+            )}
+
+            {campo(
+              "Número",
+              numero,
+              setNumero,
+              "Digite Seu Número...",
+              "phone-pad"
+            )}
+
+            {campo(
+              "Complemento",
+              complemento,
+              setComplemento,
+              "Apartamento, bloco..."
+            )}
+
+            {campo(
+              "Bairro",
+              bairro,
+              setBairro,
+              "Digite Seu Bairro..."
+            )}
+
+            {campo(
+              "Cidade",
+              cidade,
+              setCidade,
+              "Digite Sua Cidade..."
+            )}
+
+            {campo(
+              "Estado",
+              estado,
+              setEstado,
+              "Digite Seu Estado..."
+            )}
+
+            {/* BOTÃO SALVAR */}
+
+            <TouchableOpacity
+              style={styles.botao}
+              onPress={salvarDados}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.textoBotao}>
+                Salvar
+              </Text>
+            </TouchableOpacity>
+
+          </View>
+
+          {/* RODAPÉ */}
+
+          <Text style={styles.rodape}>
+            Bellaver® - 2026
           </Text>
+
         </ScrollView>
+
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+
   tela: {
     flex: 1,
     backgroundColor: "#FFFFFF",
   },
+
   container: {
     flex: 1,
     width: "100%",
@@ -192,89 +294,126 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#222222",
   },
+
   conteudo: {
     flexGrow: 1,
-    paddingHorizontal: 22,
-    paddingBottom: 30,
+    paddingHorizontal: 16,
+    paddingBottom: 15,
   },
+
   cabecalho: {
-    height: 145,
+    height: 68,
     alignItems: "center",
     justifyContent: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#BBBBBB",
     position: "relative",
   },
+
   voltar: {
     position: "absolute",
     left: 0,
-    top: 25,
+    top: 20,
     padding: 5,
   },
+
   logo: {
-    fontSize: 28,
-    fontWeight: "300",
-    letterSpacing: 6,
+    fontSize: 20,
+    fontWeight: "400",
+    letterSpacing: 5,
     color: "#080808",
   },
+
   ano: {
-    fontSize: 11,
+    fontSize: 8,
     color: "#111111",
-    marginTop: 5,
+    marginTop: 4,
   },
-  tituloContainer: {
-    paddingVertical: 25,
+
+  linha: {
+    height: 1,
+    backgroundColor: "#BBBBBB",
   },
-  titulo: {
-    fontSize: 22,
-    fontWeight: "600",
-    color: "#111111",
-  },
+
   subtitulo: {
-    fontSize: 13,
-    color: "#777777",
-    marginTop: 7,
+    textAlign: "center",
+    fontSize: 7,
+    color: "#999999",
+    marginTop: 11,
+    marginBottom: 22,
   },
+
+  foto: {
+    width: 60,
+    height: 60,
+    borderRadius: 50,
+    backgroundColor: "#DDDDDD",
+    alignSelf: "center",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 22,
+  },
+
+  textoFoto: {
+    fontSize: 11,
+    color: "#333333",
+  },
+
   formulario: {
-    gap: 17,
+    borderWidth: 1,
+    borderColor: "#555555",
+    borderRadius: 2,
+    paddingHorizontal: 11,
+    paddingTop: 8,
+    paddingBottom: 10,
+    backgroundColor: "#FFFFFF",
+    elevation: 2,
   },
+
   grupo: {
     width: "100%",
+    marginBottom: 5,
   },
+
   label: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#222222",
-    marginBottom: 8,
-  },
-  input: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: "#BBBBBB",
-    borderRadius: 3,
-    paddingHorizontal: 12,
-    fontSize: 14,
+    fontSize: 10,
     color: "#111111",
-    backgroundColor: "#FFFFFF",
+    marginBottom: 2,
   },
-  botao: {
-    height: 53,
-    backgroundColor: "#000000",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 28,
+
+  input: {
+    height: 29,
+    borderWidth: 1,
+    borderColor: "#555555",
     borderRadius: 3,
+    backgroundColor: "#EEEEEE",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    fontSize: 9,
+    color: "#111111",
   },
+
+  botao: {
+    backgroundColor: "#000000",
+    width: 70,
+    height: 24,
+    alignSelf: "center",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 2,
+    marginTop: 12,
+  },
+
   textoBotao: {
     color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "600",
-    letterSpacing: 1,
+    fontSize: 10,
+    fontWeight: "bold",
   },
-  observacao: {
-    color: "#888888",
-    fontSize: 11,
-    marginTop: 12,
+
+  rodape: {
     textAlign: "center",
+    fontSize: 8,
+    color: "#888888",
+    marginTop: 35,
+    marginBottom: 12,
   },
+
 });

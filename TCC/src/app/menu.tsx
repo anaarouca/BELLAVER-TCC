@@ -1,23 +1,62 @@
 
+import { useCallback, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { getUserRole, type UserRole } from '../auth/session';
 
 const opcoes = [
   { nome: 'Configurações', icone: 'settings-outline' as const, rota: '/configuracoes' },
   { nome: 'Favoritos / sacola', icone: 'heart-outline' as const, rota: '/favoritos' },
-  { nome: 'Bella Hope', icone: 'ellipse-outline' as const, rota: '/home' },
+  { nome: 'Bella Hope', icone: 'ellipse-outline' as const, rota: '/homeBellahope' },
   { nome: 'Categorias', icone: 'grid-outline' as const, rota: '/catalogo' },
   { nome: 'Notificações', icone: 'notifications-outline' as const, rota: '/notificacoes' },
   { nome: 'Rastreamento do pedido', icone: 'location-outline' as const, rota: '/rastreamento' },
   { nome: 'Meus pedidos', icone: 'mail-outline' as const, rota: '/pedidos' },
-  { nome: 'Filtros', icone: 'options-outline' as const, rota: '/filtros' },
+  { nome: 'Filtros', icone: 'options-outline' as const, rota: '/filtroPesquisa' },
   { nome: 'Catálogo', icone: 'document-text-outline' as const, rota: '/catalogo' },
-  { nome: 'Pesquisar', icone: 'search-outline' as const, rota: '/catalogo' },
+  { nome: 'Pesquisar', icone: 'search-outline' as const, rota: '/pesquisa' },
   { nome: 'Tela principal', icone: 'home-outline' as const, rota: '/home' },
 ];
 
+const opcoesAdministrador = opcoes.filter((opcao) =>
+  ['Configurações', 'Favoritos / sacola', 'Categorias', 'Catálogo', 'Tela principal'].includes(opcao.nome)
+);
+
 export default function MenuScreen() {
+  const [perfil, setPerfil] = useState<UserRole | null>(null);
+  const [perfilCarregado, setPerfilCarregado] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      let ativo = true;
+
+      getUserRole()
+        .then((role) => {
+          if (ativo) {
+            setPerfil(role);
+            setPerfilCarregado(true);
+          }
+        })
+        .catch((erro: unknown) => {
+          console.error('Erro ao carregar perfil do menu:', erro);
+          if (ativo) {
+            setPerfilCarregado(true);
+          }
+        });
+
+      return () => {
+        ativo = false;
+      };
+    }, [])
+  );
+
+  const opcoesVisiveis = !perfilCarregado
+    ? []
+    : perfil === 'admin'
+      ? opcoesAdministrador
+      : opcoes;
+
   function abrirRota(rota: string) {
     router.push(rota as any);
   }
@@ -50,14 +89,31 @@ export default function MenuScreen() {
         style={styles.lista}
         showsVerticalScrollIndicator={false}
       >
-        {opcoes.map((opcao, index) => (
+        {opcoesVisiveis.map((opcao, index) => (
           <TouchableOpacity
             key={opcao.nome}
             style={[
               styles.item,
               index === 0 && styles.primeiroItem,
             ]}
-            onPress={() => abrirRota(opcao.rota)}
+            onPress={() =>
+              abrirRota(
+                opcao.nome === 'Filtros'
+                  ? '/filtroPesquisa'
+                  : opcao.nome === 'Pesquisar'
+                    ? '/pesquisa'
+                    : opcao.rota
+              )
+            }
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={
+              opcao.nome === 'Filtros'
+                ? 'Abrir filtros'
+                : opcao.nome === 'Pesquisar'
+                  ? 'Abrir pesquisa'
+                  : opcao.nome
+            }
           >
             <View style={styles.icone}>
               {opcao.nome === 'Bella Hope' ? (
@@ -158,6 +214,7 @@ const styles = StyleSheet.create({
   },
 
   item: {
+    width: '100%',
     minHeight: 78,
     flexDirection: 'row',
     alignItems: 'center',

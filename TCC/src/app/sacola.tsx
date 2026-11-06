@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,8 @@ import {
   type ImageSourcePropType,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { router, useLocalSearchParams } from "expo-router";
+import { useFavoritos } from "../hooks/useFavoritos";
 
 type ItemSacola = {
   id: string;
@@ -56,12 +58,19 @@ const formatarPreco = (valor: number) =>
   });
 
 export default function Sacola() {
+  const { cupom: cupomRecebido } = useLocalSearchParams<{ cupom?: string }>();
   const [itens, setItens] = useState<ItemSacola[]>(produtosIniciais);
-  const [favoritos, setFavoritos] = useState<ItemSacola[]>([]);
   const [aba, setAba] = useState<"sacola" | "favoritos">("sacola");
   const [cupom, setCupom] = useState("");
   const [desconto, setDesconto] = useState(0);
   const [cupomAplicado, setCupomAplicado] = useState("");
+  const { favoritos, alternarFavorito } = useFavoritos();
+
+  useEffect(() => {
+    if (typeof cupomRecebido === "string") {
+      setCupom(cupomRecebido);
+    }
+  }, [cupomRecebido]);
 
   const subtotal = itens.reduce(
     (total, item) => total + item.preco * item.quantidade,
@@ -91,36 +100,30 @@ export default function Sacola() {
     setItens((lista) => lista.filter((item) => item.id !== id));
   }
 
-  function removerFavorito(id: string) {
-    setFavoritos((lista) => lista.filter((item) => item.id !== id));
-  }
-
   function aplicarCupom() {
     const codigo = cupom.trim().toUpperCase();
 
-    if (codigo === "BELLAVER10") {
+    if (codigo === "BELLAVER10" || codigo === "BEMVINDO10") {
       setDesconto(10);
       setCupomAplicado(codigo);
       Alert.alert("Cupom aplicado", "Você recebeu 10% de desconto.");
+    } else if (codigo === "MAIS15" && subtotal >= 300) {
+      setDesconto(15);
+      setCupomAplicado(codigo);
+      Alert.alert("Cupom aplicado", "Você recebeu 15% de desconto.");
+    } else if (codigo === "FRETEGRATIS") {
+      setDesconto(0);
+      setCupomAplicado(codigo);
+      Alert.alert("Cupom aplicado", "Você recebeu frete grátis.");
     } else {
       setDesconto(0);
       setCupomAplicado("");
       Alert.alert(
         "Cupom inválido",
-        "Verifique o código e tente novamente."
+        codigo === "MAIS15"
+          ? "Este cupom é válido para compras acima de R$300."
+          : "Verifique o código e tente novamente."
       );
-    }
-  }
-
-  function alternarFavorito(item: ItemSacola) {
-    const jaExiste = favoritos.some(
-      (favorito) => favorito.id === item.id
-    );
-
-    if (jaExiste) {
-      removerFavorito(item.id);
-    } else {
-      setFavoritos((lista) => [...lista, item]);
     }
   }
 
@@ -136,7 +139,10 @@ export default function Sacola() {
     );
   }
 
-  const listaExibida = aba === "sacola" ? itens : favoritos;
+  const listaExibida =
+    aba === "sacola"
+      ? itens
+      : itens.filter((item) => favoritos.includes(item.id));
 
   return (
     <SafeAreaView style={styles.tela}>
@@ -147,9 +153,7 @@ export default function Sacola() {
         <View style={styles.cabecalho}>
           <TouchableOpacity
             style={styles.menu}
-            onPress={() =>
-              Alert.alert("Bellaver", "Menu do aplicativo")
-            }
+            onPress={() => router.push("/menu")}
           >
             <Ionicons name="menu-outline" size={26} color="#111" />
           </TouchableOpacity>
@@ -284,7 +288,7 @@ export default function Sacola() {
                       style={styles.adicionarFavorito}
                       onPress={() => {
                         setItens((lista) => [...lista, item]);
-                        removerFavorito(item.id);
+                        alternarFavorito(item.id);
                         setAba("sacola");
                       }}
                     >
@@ -300,7 +304,7 @@ export default function Sacola() {
                   onPress={() =>
                     aba === "sacola"
                       ? removerItem(item.id)
-                      : removerFavorito(item.id)
+                      : alternarFavorito(item.id)
                   }
                 >
                   <Ionicons
@@ -313,17 +317,17 @@ export default function Sacola() {
                 {aba === "sacola" && (
                   <TouchableOpacity
                     style={styles.coracao}
-                    onPress={() => alternarFavorito(item)}
+                    onPress={() => alternarFavorito(item.id)}
                   >
                     <Ionicons
                       name={
-                        favoritos.some((f) => f.id === item.id)
+                        favoritos.includes(item.id)
                           ? "heart"
                           : "heart-outline"
                       }
                       size={17}
                       color={
-                        favoritos.some((f) => f.id === item.id)
+                        favoritos.includes(item.id)
                           ? "#A00000"
                           : "#888888"
                       }

@@ -32,7 +32,7 @@ export default function LoginAdmScreen() {
       senha === ADMIN_PASSWORD
     ) {
       await saveUserRole('admin');
-      router.replace('/cadProduto');
+      router.replace('/catalogo');
       return;
     }
 
@@ -87,8 +87,13 @@ export default function LoginAdmScreen() {
 
         <View style={styles.lineBottom} />
 
-        <TouchableOpacity activeOpacity={0.8}>
-          <Text style={styles.recover}>RECUPERAR SENHA</Text>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => router.replace('/login')}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar para login"
+        >
+          <Text style={styles.backToLogin}>VOLTAR PARA LOGIN</Text>
         </TouchableOpacity>
 
         <Text style={styles.footer}>Bellaver® - 2026</Text>
@@ -205,7 +210,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
 
-  recover: {
+  backToLogin: {
     color: '#F2F2F2',
     fontSize: 12,
     textAlign: 'center',

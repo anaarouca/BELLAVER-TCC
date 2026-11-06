@@ -14,6 +14,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useFavoritos } from '../hooks/useFavoritos';
 import { listarProdutosCadastrados } from '../data/produtosCadastrados';
+import { getUserRole } from '../auth/session';
 
 const produtosFixos = [
   {
@@ -103,6 +104,7 @@ function formatarPreco(preco: string): string {
 
 export default function CatalogoScreen() {
   const { favoritos, alternarFavorito } = useFavoritos();
+  const [isAdmin, setIsAdmin] = useState(false);
   const [produtosCadastrados, setProdutosCadastrados] = useState<
     Awaited<ReturnType<typeof listarProdutosCadastrados>>
   >([]);
@@ -110,6 +112,16 @@ export default function CatalogoScreen() {
   useFocusEffect(
     useCallback(() => {
       let ativo = true;
+
+      getUserRole()
+        .then((role) => {
+          if (ativo) {
+            setIsAdmin(role === 'admin');
+          }
+        })
+        .catch((erro: unknown) => {
+          console.error('Erro ao verificar perfil:', erro);
+        });
 
       listarProdutosCadastrados()
         .then((produtos) => {
@@ -166,7 +178,18 @@ export default function CatalogoScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       <View style={styles.cabecalho}>
-        <View style={styles.espaco} />
+        {isAdmin ? (
+          <TouchableOpacity
+            style={styles.botaoAdicionar}
+            onPress={() => router.push('/cadProduto')}
+            accessibilityRole="button"
+            accessibilityLabel="Adicionar produto"
+          >
+            <Ionicons name="add" size={27} color="#111111" />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.espaco} />
+        )}
 
         <View style={styles.marca}>
           <Text style={styles.logo}>BELLAVER</Text>
@@ -287,6 +310,13 @@ const styles = StyleSheet.create({
 
   espaco: {
     width: 28,
+  },
+
+  botaoAdicionar: {
+    width: 28,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   marca: {

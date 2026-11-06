@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -8,14 +8,11 @@ import {
   StyleSheet,
   SafeAreaView,
   StatusBar,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 
 export default function Cupons() {
-  const [aba, setAba] = useState("disponiveis");
-  const [meusCupons, setMeusCupons] = useState<string[]>([]);
-
   const cupons = [
     {
       codigo: "BEMVINDO10",
@@ -34,28 +31,6 @@ export default function Cupons() {
     },
   ];
 
-  function usarCupom(codigo: string) {
-    if (meusCupons.includes(codigo)) {
-      Alert.alert(
-        "Cupom já adicionado",
-        "Este cupom já está na sua lista de cupons."
-      );
-      return;
-    }
-
-    setMeusCupons([...meusCupons, codigo]);
-
-    Alert.alert(
-      "Cupom adicionado!",
-      `O cupom ${codigo} foi adicionado aos seus cupons. Você poderá selecioná-lo na finalização da compra.`
-    );
-  }
-
-  const listaCupons =
-    aba === "disponiveis"
-      ? cupons.filter((cupom) => !meusCupons.includes(cupom.codigo))
-      : cupons.filter((cupom) => meusCupons.includes(cupom.codigo));
-
   return (
     <SafeAreaView style={styles.tela}>
       <StatusBar
@@ -68,9 +43,7 @@ export default function Cupons() {
         <View style={styles.cabecalho}>
           <TouchableOpacity
             style={styles.menu}
-            onPress={() =>
-              Alert.alert("Bellaver", "Menu do aplicativo")
-            }
+            onPress={() => router.push("/menu")}
           >
             <Ionicons
               name="menu-outline"
@@ -92,55 +65,14 @@ export default function Cupons() {
             Cupons e promoções
           </Text>
 
-          {/* ABAS */}
-          <View style={styles.abas}>
-            <TouchableOpacity
-              style={[
-                styles.aba,
-                aba === "disponiveis" && styles.abaAtiva,
-              ]}
-              onPress={() => setAba("disponiveis")}
-            >
-              <Text
-                style={[
-                  styles.textoAba,
-                  aba === "disponiveis" && styles.textoAbaAtiva,
-                ]}
-              >
-                Disponíveis
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.aba,
-                aba === "meus" && styles.abaAtiva,
-              ]}
-              onPress={() => setAba("meus")}
-            >
-              <Text
-                style={[
-                  styles.textoAba,
-                  aba === "meus" && styles.textoAbaAtiva,
-                ]}
-              >
-                Meus cupons
-                {meusCupons.length > 0
-                  ? ` (${meusCupons.length})`
-                  : ""}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
           {/* LISTA DE CUPONS */}
           <View style={styles.lista}>
-            {listaCupons.length > 0 ? (
-              listaCupons.map((cupom, index) => (
+            {cupons.map((cupom, index) => (
                 <View
                   key={cupom.codigo}
                   style={[
                     styles.cartaoCupom,
-                    index === listaCupons.length - 1 &&
+                    index === cupons.length - 1 &&
                       styles.ultimoCupom,
                   ]}
                 >
@@ -160,7 +92,12 @@ export default function Cupons() {
 
                   <TouchableOpacity
                     style={styles.botaoUsar}
-                    onPress={() => usarCupom(cupom.codigo)}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/sacola",
+                        params: { cupom: cupom.codigo },
+                      })
+                    }
                     activeOpacity={0.7}
                   >
                     <Text style={styles.textoBotao}>
@@ -168,22 +105,7 @@ export default function Cupons() {
                     </Text>
                   </TouchableOpacity>
                 </View>
-              ))
-            ) : (
-              <View style={styles.vazio}>
-                <Ionicons
-                  name="ticket-outline"
-                  size={35}
-                  color="#999999"
-                />
-
-                <Text style={styles.textoVazio}>
-                  {aba === "meus"
-                    ? "Você ainda não tem cupons salvos."
-                    : "Não há cupons disponíveis no momento."}
-                </Text>
-              </View>
-            )}
+              ))}
           </View>
 
           <View style={styles.espacoFinal} />
@@ -210,8 +132,8 @@ const styles = StyleSheet.create({
   },
 
   cabecalho: {
-    height: 111,
-    marginHorizontal: 40,
+    height: 130,
+    marginHorizontal: 29,
     borderBottomWidth: 2,
     borderBottomColor: "#888888",
     alignItems: "center",
@@ -220,7 +142,7 @@ const styles = StyleSheet.create({
 
   menu: {
     position: "absolute",
-    right: -30,
+    right: -2,
     top: 25,
   },
 
@@ -240,50 +162,22 @@ const styles = StyleSheet.create({
 
   conteudo: {
     flex: 1,
-    paddingHorizontal: 27,
+    paddingHorizontal: 30,
   },
 
   titulo: {
     fontSize: 20,
     fontWeight: "600",
     color: "#111111",
-    marginTop: 48,
-    marginBottom: 12,
-  },
-
-  abas: {
-    height: 44,
-    flexDirection: "row",
-    borderWidth: 1,
-    borderColor: "#D5D5D5",
-    borderRadius: 3,
-    marginBottom: 36,
-  },
-
-  aba: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "transparent",
-  },
-
-  abaAtiva: {
-    borderBottomWidth: 2,
-    borderBottomColor: "#111111",
-  },
-
-  textoAba: {
-    fontSize: 14,
-    color: "#BBBBBB",
-  },
-
-  textoAbaAtiva: {
-    color: "#111111",
-    fontWeight: "600",
+    marginTop: 41,
+    marginBottom: 0,
+    marginHorizontal: 28,
   },
 
   lista: {
+    width: "88%",
+    alignSelf: "center",
+    marginTop: 47,
     borderWidth: 1,
     borderColor: "#D5D5D5",
     borderRadius: 2,
@@ -343,21 +237,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#111111",
     fontWeight: "600",
-  },
-
-  vazio: {
-    minHeight: 180,
-    paddingHorizontal: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-  },
-
-  textoVazio: {
-    color: "#777777",
-    fontSize: 14,
-    textAlign: "center",
-    lineHeight: 21,
   },
 
   espacoFinal: {
