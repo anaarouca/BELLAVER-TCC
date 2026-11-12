@@ -6,10 +6,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { getUserRole, type UserRole } from '../auth/session';
 
 const opcoes = [
-  { nome: 'Configurações', icone: 'settings-outline' as const, rota: '/configuracoes' },
+  { nome: 'Configurações', icone: 'settings-outline' as const, rota: '/telaperfil' },
   { nome: 'Favoritos / sacola', icone: 'heart-outline' as const, rota: '/favoritos' },
   { nome: 'Bella Hope', icone: 'ellipse-outline' as const, rota: '/homeBellahope' },
-  { nome: 'Categorias', icone: 'grid-outline' as const, rota: '/catalogo' },
+  { nome: 'Categorias', icone: 'grid-outline' as const, rota: '/categoria' },
   { nome: 'Notificações', icone: 'notifications-outline' as const, rota: '/notificacoes' },
   { nome: 'Rastreamento do pedido', icone: 'location-outline' as const, rota: '/rastreamento' },
   { nome: 'Meus pedidos', icone: 'mail-outline' as const, rota: '/pedidos' },

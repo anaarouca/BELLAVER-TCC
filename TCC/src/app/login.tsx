@@ -16,12 +16,13 @@ import { router } from 'expo-router';
 import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
+  signOut,
   signInWithPopup,
 } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
 import {
   ADMIN_EMAIL,
-  ADMIN_PASSWORD,
+  clearUserRole,
   saveUserRole,
 } from '../auth/session';
 
@@ -39,27 +40,26 @@ export default function LoginScreen() {
       return;
     }
 
-    if (
-      email.trim().toLowerCase() === ADMIN_EMAIL &&
-      senha === ADMIN_PASSWORD
-    ) {
-      await saveUserRole('admin');
-      router.replace('/cadProduto');
-      return;
-    }
-
     try {
       setCarregando(true);
       setErroLogin('');
 
-      await signInWithEmailAndPassword(
+      const credencial = await signInWithEmailAndPassword(
         auth,
         email.trim(),
         senha
       );
 
-      await saveUserRole('customer');
-      router.replace('/home');
+      const isAdmin = email.trim().toLowerCase() === ADMIN_EMAIL;
+      if (isAdmin && !credencial.user.emailVerified) {
+        await signOut(auth);
+        await clearUserRole();
+        setErroLogin('A conta de administrador precisa ter o e-mail verificado.');
+        return;
+      }
+
+      await saveUserRole(isAdmin ? 'admin' : 'customer');
+      router.replace(isAdmin ? '/cadProduto' : '/home');
     } catch (erro: any) {
       console.log('ERRO DO LOGIN:', erro.code, erro.message);
 

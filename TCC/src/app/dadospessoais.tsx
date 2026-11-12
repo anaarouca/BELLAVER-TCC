@@ -10,11 +10,17 @@ import {
   StatusBar,
   ScrollView,
   Alert,
+  Image,
 } from "react-native";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
+import { onAuthStateChanged, type User } from "firebase/auth";
+import { auth } from "../firebaseConfig";
+
+const PROFILE_STORAGE_KEY = "dadosPessoais";
 
 export default function DadosPessoais() {
   const router = useRouter();
@@ -22,6 +28,7 @@ export default function DadosPessoais() {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
+  const [nomeEndereco, setNomeEndereco] = useState("");
   const [cep, setCep] = useState("");
   const [rua, setRua] = useState("");
   const [numero, setNumero] = useState("");
@@ -29,31 +36,79 @@ export default function DadosPessoais() {
   const [bairro, setBairro] = useState("");
   const [cidade, setCidade] = useState("");
   const [estado, setEstado] = useState("");
+  const [foto, setFoto] = useState<string | null>(null);
 
   useEffect(() => {
-    carregarDados();
+    return onAuthStateChanged(auth, (usuario) => {
+      carregarDados(usuario);
+    });
   }, []);
 
-  async function carregarDados() {
+  async function carregarDados(usuario: User | null) {
     try {
-      const dados = await AsyncStorage.getItem("dadosPessoais");
+      const chaveDoPerfil = usuario
+        ? `${PROFILE_STORAGE_KEY}:${usuario.uid}`
+        : PROFILE_STORAGE_KEY;
+      let dados = await AsyncStorage.getItem(chaveDoPerfil);
+      let informacoes = dados ? JSON.parse(dados) : {};
 
-      if (dados !== null) {
-        const informacoes = JSON.parse(dados);
+      if (!dados && usuario?.email) {
+        const dadosLegados = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
+        const informacoesLegadas = dadosLegados
+          ? JSON.parse(dadosLegados)
+          : {};
 
-        setNome(informacoes.nome || "");
-        setEmail(informacoes.email || "");
-        setTelefone(informacoes.telefone || "");
-        setCep(informacoes.cep || "");
-        setRua(informacoes.rua || "");
-        setNumero(informacoes.numero || "");
-        setComplemento(informacoes.complemento || "");
-        setBairro(informacoes.bairro || "");
-        setCidade(informacoes.cidade || "");
-        setEstado(informacoes.estado || "");
+        if (
+          dadosLegados &&
+          usuario.email.toLowerCase() === informacoesLegadas.email?.toLowerCase()
+        ) {
+          dados = dadosLegados;
+          informacoes = informacoesLegadas;
+          await AsyncStorage.setItem(chaveDoPerfil, dados);
+        }
       }
+
+      setNome(informacoes.nome || usuario?.displayName || "");
+      setEmail(informacoes.email || usuario?.email || "");
+      setTelefone(informacoes.telefone || "");
+      setNomeEndereco(informacoes.nomeEndereco || "");
+      setCep(informacoes.cep || "");
+      setRua(informacoes.rua || "");
+      setNumero(informacoes.numero || "");
+      setComplemento(informacoes.complemento || "");
+      setBairro(informacoes.bairro || "");
+      setCidade(informacoes.cidade || "");
+      setEstado(informacoes.estado || "");
+      setFoto(informacoes.foto || null);
     } catch (erro) {
       Alert.alert("Erro", "Não foi possível carregar os dados.");
+    }
+  }
+
+  async function selecionarFoto() {
+    try {
+      const permissao = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permissao.granted) {
+        Alert.alert(
+          "Permissão necessária",
+          "Permita o acesso às fotos para escolher uma imagem de perfil."
+        );
+        return;
+      }
+
+      const resultado = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!resultado.canceled) {
+        setFoto(resultado.assets[0].uri);
+      }
+    } catch (erro) {
+      Alert.alert("Erro", "Não foi possível abrir suas fotos.");
     }
   }
 
@@ -77,6 +132,7 @@ export default function DadosPessoais() {
       nome,
       email,
       telefone,
+      nomeEndereco,
       cep,
       rua,
       numero,
@@ -84,11 +140,14 @@ export default function DadosPessoais() {
       bairro,
       cidade,
       estado,
+      foto,
     };
 
     try {
       await AsyncStorage.setItem(
-        "dadosPessoais",
+        auth.currentUser
+          ? `${PROFILE_STORAGE_KEY}:${auth.currentUser.uid}`
+          : PROFILE_STORAGE_KEY,
         JSON.stringify(dados)
       );
 
@@ -169,9 +228,22 @@ export default function DadosPessoais() {
 
           {/* FOTO */}
 
-          <TouchableOpacity style={styles.foto}>
-            <Text style={styles.textoFoto}>Foto</Text>
+          <TouchableOpacity
+            style={styles.foto}
+            onPress={selecionarFoto}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel={foto ? "Alterar foto de perfil" : "Adicionar foto de perfil"}
+          >
+            {foto ? (
+              <Image source={{ uri: foto }} style={styles.imagemFoto} />
+            ) : (
+              <Ionicons name="camera-outline" size={25} color="#333333" />
+            )}
           </TouchableOpacity>
+          <Text style={styles.textoFoto}>
+            {foto ? "Toque para alterar a foto" : "Adicionar foto"}
+          </Text>
 
           {/* FORMULÁRIO */}
 
@@ -198,6 +270,13 @@ export default function DadosPessoais() {
               setTelefone,
               "Digite Seu Celular...",
               "phone-pad"
+            )}
+
+            {campo(
+              "Nome do endereço",
+              nomeEndereco,
+              setNomeEndereco,
+              "Ex.: Casa, Trabalho..."
             )}
 
             {campo(
@@ -298,6 +377,7 @@ const styles = StyleSheet.create({
   conteudo: {
     flexGrow: 1,
     paddingHorizontal: 16,
+    paddingTop: 20,
     paddingBottom: 15,
   },
 
@@ -342,19 +422,27 @@ const styles = StyleSheet.create({
   },
 
   foto: {
-    width: 60,
-    height: 60,
+    width: 76,
+    height: 76,
     borderRadius: 50,
     backgroundColor: "#DDDDDD",
     alignSelf: "center",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 22,
+    marginBottom: 6,
+    overflow: "hidden",
+  },
+
+  imagemFoto: {
+    width: "100%",
+    height: "100%",
   },
 
   textoFoto: {
-    fontSize: 11,
-    color: "#333333",
+    fontSize: 10,
+    color: "#555555",
+    textAlign: "center",
+    marginBottom: 22,
   },
 
   formulario: {

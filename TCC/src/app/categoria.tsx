@@ -78,7 +78,13 @@ export default function Categoria() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.categoryCard}>
+          <TouchableOpacity
+            style={styles.categoryCard}
+            onPress={() => router.push('/catalogoCalcados')}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Abrir catálogo de calçados"
+          >
             <Image
               source={require('../../assets/Img/Calçados.png')}
               style={styles.image}
@@ -89,7 +95,13 @@ export default function Categoria() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.categoryCard}>
+          <TouchableOpacity
+            style={styles.categoryCard}
+            onPress={() => router.push('/catalogoacessorios')}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Abrir catálogo de acessórios"
+          >
             <Image
               source={require('../../assets/Img/Acessórios.png')}
               style={styles.image}

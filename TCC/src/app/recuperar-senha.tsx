@@ -17,12 +17,21 @@ import { auth } from '../firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function RecuperarSenhaScreen() {
-  const { origem } = useLocalSearchParams<{ origem?: string }>();
-  const [email, setEmail] = useState('');
+  const { origem, email: emailInicial } = useLocalSearchParams<{
+    origem?: string;
+    email?: string;
+  }>();
+  const [email, setEmail] = useState(emailInicial ?? '');
   const [carregando, setCarregando] = useState(false);
 
   function voltar() {
-    router.replace(origem === 'perfil' ? '/telaperfil' : '/login');
+    router.replace(
+      origem === 'perfil'
+        ? '/telaperfil'
+        : origem === 'admin'
+          ? '/loginAdm'
+          : '/login'
+    );
   }
 
   async function enviarLink() {

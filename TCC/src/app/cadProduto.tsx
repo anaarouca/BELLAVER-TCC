@@ -14,18 +14,28 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
+import { onAuthStateChanged } from 'firebase/auth';
 import {
+  CATEGORIAS_PRODUTO,
   ImagemProdutoNova,
+  obterTamanhosDisponiveis,
   persistirImagemProduto,
   salvarProdutoCadastrado,
+  CategoriaProduto,
 } from '../data/produtosCadastrados';
-import { getUserRole } from '../auth/session';
+import {
+  ADMIN_EMAIL,
+  clearUserRole,
+  getUserRole,
+} from '../auth/session';
+import { auth } from '../firebaseConfig';
 
 export default function CadastroProdutoScreen() {
   const [nome, setNome] = useState('');
   const [precoOriginal, setPrecoOriginal] = useState('');
   const [precoDesconto, setPrecoDesconto] = useState('');
   const [descricao, setDescricao] = useState('');
+  const [categoria, setCategoria] = useState<CategoriaProduto | null>(null);
   const [imagens, setImagens] = useState<(ImagemProdutoNova | null)[]>([
     null,
     null,
@@ -35,22 +45,62 @@ export default function CadastroProdutoScreen() {
   const [tamanhosSelecionados, setTamanhosSelecionados] = useState(['36']);
   const [salvando, setSalvando] = useState(false);
   const [autorizado, setAutorizado] = useState(false);
-  const tamanhos = ['36', '38', '40', '42'];
+  const tamanhos = obterTamanhosDisponiveis(categoria, nome);
 
   useEffect(() => {
-    async function verificarAcesso() {
-      const role = await getUserRole();
-
-      if (role !== 'admin') {
-        Alert.alert('Acesso restrito', 'Apenas o administrador pode acessar este painel.');
-        router.replace('/loginAdm');
-        return;
+    setTamanhosSelecionados((atuais) => {
+      const selecionadosValidos = atuais.filter((tamanho) =>
+        tamanhos.includes(tamanho)
+      );
+      if (selecionadosValidos.length > 0) {
+        return selecionadosValidos;
       }
 
-      setAutorizado(true);
-    }
+      return categoria === 'acessorios' ? tamanhos : tamanhos.slice(0, 1);
+    });
+  }, [categoria, nome]);
 
-    verificarAcesso();
+  useEffect(() => {
+    let ativo = true;
+    const unsubscribe = onAuthStateChanged(auth, (usuario) => {
+      void (async () => {
+        const role = await getUserRole();
+        const acessoValido =
+          role === 'admin' &&
+          usuario?.email?.toLowerCase() === ADMIN_EMAIL &&
+          usuario.emailVerified;
+
+        if (!ativo) {
+          return;
+        }
+
+        if (!acessoValido) {
+          await clearUserRole();
+          Alert.alert(
+            'Acesso restrito',
+            'Entre novamente com a conta de administrador verificada.'
+          );
+          router.replace('/loginAdm');
+          return;
+        }
+
+        setAutorizado(true);
+      })().catch((erro: unknown) => {
+        console.error('Erro ao verificar acesso ao cadastro:', erro);
+        if (ativo) {
+          Alert.alert(
+            'Erro de autenticação',
+            'Não foi possível verificar sua sessão. Entre novamente.'
+          );
+          router.replace('/loginAdm');
+        }
+      });
+    });
+
+    return () => {
+      ativo = false;
+      unsubscribe();
+    };
   }, []);
 
   if (!autorizado) {
@@ -73,7 +123,6 @@ export default function CadastroProdutoScreen() {
         mediaTypes: ['images'],
         allowsEditing: true,
         quality: 0.6,
-        base64: true,
       });
 
       if (!resultado.canceled && resultado.assets.length > 0) {
@@ -81,8 +130,8 @@ export default function CadastroProdutoScreen() {
         const novasImagens = [...imagens];
         novasImagens[indice] = {
           uri: asset.uri,
-          base64: asset.base64,
-          mimeType: asset.mimeType,
+          width: asset.width,
+          height: asset.height,
         };
         setImagens(novasImagens);
       }
@@ -102,6 +151,10 @@ export default function CadastroProdutoScreen() {
   }
 
   function alternarTamanho(tamanho: string) {
+    if (!tamanhos.includes(tamanho)) {
+      return;
+    }
+
     setTamanhosSelecionados((atuais) =>
       atuais.includes(tamanho)
         ? atuais.filter((item) => item !== tamanho)
@@ -110,15 +163,33 @@ export default function CadastroProdutoScreen() {
   }
 
   async function salvarProduto() {
+    const tamanhosValidos = tamanhosSelecionados.filter((tamanho) =>
+      tamanhos.includes(tamanho)
+    );
     if (
       !nome.trim() ||
       !precoOriginal.trim() ||
       !precoDesconto.trim() ||
       !descricao.trim() ||
+      !categoria ||
       !imagens.some((imagem) => imagem !== null) ||
-      tamanhosSelecionados.length === 0
+      (tamanhos.length > 0 && tamanhosValidos.length === 0)
     ) {
       Alert.alert('Atenção', 'Preencha todos os campos antes de salvar.');
+      return;
+    }
+
+    const usuario = auth.currentUser;
+    if (
+      !usuario ||
+      usuario.email?.toLowerCase() !== ADMIN_EMAIL ||
+      !usuario.emailVerified
+    ) {
+      Alert.alert(
+        'Sessão expirada',
+        'Entre novamente com a conta de administrador verificada para salvar o produto.'
+      );
+      router.replace('/loginAdm');
       return;
     }
 
@@ -126,24 +197,29 @@ export default function CadastroProdutoScreen() {
     try {
       const imagensPersistidas = await Promise.all(
         imagens
-          .map((imagem, indice) =>
-            imagem ? persistirImagemProduto(imagem, indice) : null
+          .map((imagem) =>
+            imagem ? persistirImagemProduto(imagem) : null
           )
           .filter((imagem): imagem is Promise<string> => imagem !== null)
       );
       const produtoSalvo = await salvarProdutoCadastrado({
         nome: nome.trim(),
+        categoria,
         precoOriginal: precoOriginal.trim(),
         precoDesconto: precoDesconto.trim(),
         descricao: descricao.trim(),
         imagens: imagensPersistidas,
         estoque,
-        tamanhos: tamanhosSelecionados,
+        tamanhos: tamanhosValidos,
       });
 
       router.replace({
         pathname: '/mensagem',
-        params: { id: produtoSalvo.id, nome: produtoSalvo.nome },
+        params: {
+          id: produtoSalvo.id,
+          nome: produtoSalvo.nome,
+          categoria: produtoSalvo.categoria,
+        },
       });
     } catch (erro) {
       console.error('Erro ao salvar produto:', erro);
@@ -204,6 +280,35 @@ export default function CadastroProdutoScreen() {
             onChangeText={setNome}
           />
 
+          <Text style={styles.label}>Categoria do Produto</Text>
+          <View style={styles.listaCategorias}>
+            {CATEGORIAS_PRODUTO.map((opcao) => {
+              const selecionada = categoria === opcao.valor;
+              return (
+                <TouchableOpacity
+                  key={opcao.valor}
+                  style={[
+                    styles.botaoCategoria,
+                    selecionada && styles.categoriaSelecionada,
+                  ]}
+                  onPress={() => setCategoria(opcao.valor)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: selecionada }}
+                  accessibilityLabel={`Categoria ${opcao.nome}`}
+                >
+                  <Text
+                    style={[
+                      styles.textoCategoria,
+                      selecionada && styles.textoCategoriaSelecionada,
+                    ]}
+                  >
+                    {opcao.nome}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
           <Text style={styles.label}>Preço Original do Produto</Text>
           <TextInput
             style={styles.input}
@@ -254,36 +359,40 @@ export default function CadastroProdutoScreen() {
             </TouchableOpacity>
           </View>
 
-          <Text style={[styles.label, styles.labelTamanhos]}>
-            Tamanhos disponíveis
-          </Text>
-          <View style={styles.listaTamanhos}>
-            {tamanhos.map((tamanho) => {
-              const selecionado = tamanhosSelecionados.includes(tamanho);
-              return (
-                <TouchableOpacity
-                  key={tamanho}
-                  style={[
-                    styles.botaoTamanho,
-                    selecionado && styles.tamanhoSelecionado,
-                  ]}
-                  onPress={() => alternarTamanho(tamanho)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: selecionado }}
-                  accessibilityLabel={`Tamanho ${tamanho}`}
-                >
-                  <Text
-                    style={[
-                      styles.textoTamanho,
-                      selecionado && styles.textoTamanhoSelecionado,
-                    ]}
-                  >
-                    {tamanho}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          {tamanhos.length > 0 && (
+            <>
+              <Text style={[styles.label, styles.labelTamanhos]}>
+                Tamanhos disponíveis
+              </Text>
+              <View style={styles.listaTamanhos}>
+                {tamanhos.map((tamanho) => {
+                  const selecionado = tamanhosSelecionados.includes(tamanho);
+                  return (
+                    <TouchableOpacity
+                      key={tamanho}
+                      style={[
+                        styles.botaoTamanho,
+                        selecionado && styles.tamanhoSelecionado,
+                      ]}
+                      onPress={() => alternarTamanho(tamanho)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: selecionado }}
+                      accessibilityLabel={`Tamanho ${tamanho}`}
+                    >
+                      <Text
+                        style={[
+                          styles.textoTamanho,
+                          selecionado && styles.textoTamanhoSelecionado,
+                        ]}
+                      >
+                        {tamanho}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </>
+          )}
 
           <Text style={[styles.label, styles.labelImagens]}>
             Imagens do Produto
@@ -446,6 +555,37 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#111111',
     marginBottom: 12,
+  },
+
+  listaCategorias: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 14,
+  },
+
+  botaoCategoria: {
+    minHeight: 30,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: '#111111',
+    borderRadius: 3,
+    backgroundColor: '#EEEEEE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  categoriaSelecionada: {
+    backgroundColor: '#000000',
+  },
+
+  textoCategoria: {
+    fontSize: 11,
+    color: '#111111',
+  },
+
+  textoCategoriaSelecionada: {
+    color: '#FFFFFF',
   },
 
   controleEstoque: {

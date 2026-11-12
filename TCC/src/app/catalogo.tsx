@@ -1,3 +1,4 @@
+
 import { useCallback, useState } from 'react';
 import {
   View,
@@ -15,79 +16,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFavoritos } from '../hooks/useFavoritos';
 import { listarProdutosCadastrados } from '../data/produtosCadastrados';
 import { getUserRole } from '../auth/session';
-
-const produtosFixos = [
-  {
-    id: '1',
-    nome: 'Blusa em organza de seda Branco',
-    original: 'R$ 890,00',
-    preco: 'R$ 760,00',
-    imagem: require('../../assets/Img/BlusaEmOrganza.png'),
-  },
-  {
-    id: '2',
-    nome: 'Set Denim Grand Icon Azul Gisele Edition',
-    original: 'R$ 1.480,00',
-    preco: 'R$ 1.197,00',
-    imagem: require('../../assets/Img/SetDenimGrand.png'),
-  },
-  {
-    id: '3',
-    nome: 'Gown Saint Tropez Branco',
-    original: 'R$ 1.280,00',
-    preco: 'R$ 897,00',
-    imagem: require('../../assets/Img/GownSaint.png'),
-  },
-  {
-    id: '4',
-    nome: 'Trench Coat Alfaiataria Preto',
-    original: 'R$ 3.500,00',
-    preco: 'R$ 320,00',
-    imagem: require('../../assets/Img/TrenchCoatAlfaiataria.png'),
-  },
-  {
-    id: '5',
-    nome: 'Vestido Longo Azul-Marinho',
-    original: 'R$ 1.140,00',
-    preco: 'R$ 897,00',
-    imagem: require('../../assets/Img/VestidoLongoAzul.png'),
-  },
-  {
-    id: '6',
-    nome: 'Conjunto Social Preto e Branco',
-    original: 'R$ 780,00',
-    preco: 'R$ 597,00',
-    imagem: require('../../assets/Img/ConjuntoSocialPreto.png'),
-  },
-  {
-    id: '7',
-    nome: 'Conjunto Alfaiataria Off-White',
-    original: 'R$ 899,00',
-    preco: 'R$ 697,00',
-    imagem: require('../../assets/Img/ConjuntoAlfaiatariaOff.png'),
-  },
-  {
-    id: '8',
-    nome: 'Colete Alfaiataria Risca de Giz Hudson',
-    original: 'R$ 389,00',
-    preco: 'R$ 297,00',
-    imagem: require('../../assets/Img/ColeteAlfaiatariaRisca.png'),
-  },
-  {
-    id: '9',
-    nome: 'Tailleur Cinza & Rose Quartz | Ana Paula Renault',
-    original: 'R$ 780,00',
-    preco: 'R$ 597,00',
-    imagem: require('../../assets/Img/TailleurCinzaRose.png'),
-  },
-  {
-    id: '10',
-    nome: 'Set Denim Grand Icon Azul Gisele Edition',
-    original: 'R$ 1.480,00',
-    preco: 'R$ 1.197,00',
-    imagem: require('../../assets/Img/SetDenimGrand.png'),
-  },
-];
 
 type ProdutoCatalogo = {
   id: string;
@@ -146,15 +74,16 @@ export default function CatalogoScreen() {
   );
 
   const produtos: ProdutoCatalogo[] = [
-    ...produtosFixos.map((produto) => ({ ...produto, cadastrado: false })),
-    ...produtosCadastrados.map((produto) => ({
-      id: produto.id,
-      nome: produto.nome,
-      original: formatarPreco(produto.precoOriginal),
-      preco: formatarPreco(produto.precoDesconto),
-      imagem: { uri: produto.imagens[0] },
-      cadastrado: true,
-    })),
+    ...produtosCadastrados
+      .filter((produto) => produto.categoria === 'feminino')
+      .map((produto) => ({
+        id: produto.id,
+        nome: produto.nome,
+        original: formatarPreco(produto.precoOriginal),
+        preco: formatarPreco(produto.precoDesconto),
+        imagem: { uri: produto.imagens[0] },
+        cadastrado: true,
+      })),
   ];
 
   function abrirProduto(id: string, cadastrado = false) {
@@ -178,6 +107,25 @@ export default function CatalogoScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       <View style={styles.cabecalho}>
+        <TouchableOpacity
+          style={styles.botaoVoltar}
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/home');
+            }
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar para a tela anterior"
+        >
+          <Ionicons
+            name="arrow-back-outline"
+            size={25}
+            color="#111111"
+          />
+        </TouchableOpacity>
+
         {isAdmin ? (
           <TouchableOpacity
             style={styles.botaoAdicionar}
@@ -213,15 +161,17 @@ export default function CatalogoScreen() {
       <View style={styles.barraTitulo}>
         <Text style={styles.titulo}>NOVIDADES</Text>
 
-        <TouchableOpacity
-          onPress={() => router.push('/pesquisar' as any)}
-        >
-          <Ionicons
-            name="search-outline"
-            size={19}
-            color="#111111"
-          />
-        </TouchableOpacity>
+        {!isAdmin && (
+          <TouchableOpacity
+            onPress={() => router.push('/pesquisar' as any)}
+          >
+            <Ionicons
+              name="search-outline"
+              size={19}
+              color="#111111"
+            />
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView
@@ -306,6 +256,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 24,
+  },
+
+  botaoVoltar: {
+    width: 28,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   espaco: {
@@ -433,4 +390,4 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginTop: 1,
   },
-})
+});

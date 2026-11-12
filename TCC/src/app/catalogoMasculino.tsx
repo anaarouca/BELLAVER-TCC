@@ -1,6 +1,7 @@
 
-import React from 'react';
+import { useCallback, useState } from 'react';
 import {
+  Alert,
   View,
   Text,
   Image,
@@ -11,55 +12,11 @@ import {
   ImageSourcePropType,
 } from 'react-native';
 
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useFavoritos } from '../hooks/useFavoritos';
-
-// PRODUTOS MASCULINOS
-const produtos = [
-  {
-    id: 'masc1',
-    nome: 'Blusa Élégance em Seda Off-White',
-    original: 'R$ 499,90',
-    preco: 'R$ 349,90',
-    imagem: require('../../assets/Img/BlusaÉlégance.png'),
-  },
-  {
-    id: 'masc2',
-    nome: 'Jaqueta Grand Icon Denim Marrom',
-    original: 'R$ 1.090,00',
-    preco: 'R$ 829,90',
-    imagem: require('../../assets/Img/JaquetaGrand.png'),
-  },
-  {
-    id: 'masc3',
-    nome: 'Suéter Saint Laurent Azul Marinho',
-    original: 'R$ 699,00',
-    preco: 'R$ 529,90',
-    imagem: require('../../assets/Img/SuéterSaint.png'),
-  },
-  {
-    id: 'masc4',
-    nome: 'Trench Coat Milano Alfaiataria Preto',
-    original: 'R$ 1.309,00',
-    preco: 'R$ 1.049,90',
-    imagem: require('../../assets/Img/TrenchMasculino.png'),
-  },
-  {
-    id: 'masc5',
-    nome: 'Casaco Heritage Cinza',
-    original: 'R$ 849,00',
-    preco: 'R$ 679,90',
-    imagem: require('../../assets/Img/CasacoHeritage.png'),
-  },
-  {
-    id: 'masc6',
-    nome: 'Camisa Social Azul-Claro',
-    original: 'R$ 429,90',
-    preco: 'R$ 319,90',
-    imagem: require('../../assets/Img/CamisaSocial.png'),
-  },
-];
+import { listarProdutosCadastrados } from '../data/produtosCadastrados';
+import { getUserRole } from '../auth/session';
 
 type Produto = {
   id: string;
@@ -71,10 +28,60 @@ type Produto = {
 
 export default function CatalogoMasculinoScreen() {
   const { favoritos, alternarFavorito } = useFavoritos();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [produtosCadastrados, setProdutosCadastrados] = useState<
+    Awaited<ReturnType<typeof listarProdutosCadastrados>>
+  >([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let ativo = true;
+
+      getUserRole()
+        .then((role) => {
+          if (ativo) {
+            setIsAdmin(role === 'admin');
+          }
+        })
+        .catch((erro: unknown) => {
+          console.error('Erro ao verificar perfil:', erro);
+        });
+
+      listarProdutosCadastrados()
+        .then((produtos) => {
+          if (ativo) {
+            setProdutosCadastrados(
+              produtos.filter((produto) => produto.categoria === 'masculino')
+            );
+          }
+        })
+        .catch((erro: unknown) => {
+          console.error('Erro ao carregar produtos masculinos:', erro);
+          Alert.alert(
+            'Erro ao carregar catálogo',
+            erro instanceof Error
+              ? erro.message
+              : 'Não foi possível carregar os produtos cadastrados.'
+          );
+        });
+
+      return () => {
+        ativo = false;
+      };
+    }, [])
+  );
+
+  const produtosExibidos: Produto[] = produtosCadastrados.map((produto) => ({
+    id: produto.id,
+    nome: produto.nome,
+    original: `R$ ${produto.precoOriginal.replace(/^R\$\s*/i, '').trim()}`,
+    preco: `R$ ${produto.precoDesconto.replace(/^R\$\s*/i, '').trim()}`,
+    imagem: { uri: produto.imagens[0] },
+  }));
 
   function abrirProduto(id: string) {
     router.push({
-      pathname: '/produto1',
+      pathname: '/produto2',
       params: { id },
     });
   }
@@ -88,7 +95,33 @@ export default function CatalogoMasculinoScreen() {
 
       {/* CABEÇALHO */}
       <View style={styles.cabecalho}>
-        <View style={styles.espaco} />
+        <TouchableOpacity
+          style={styles.botaoVoltar}
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/home');
+            }
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar para a tela anterior"
+        >
+          <Ionicons name="arrow-back-outline" size={25} color="#111111" />
+        </TouchableOpacity>
+
+        {isAdmin ? (
+          <TouchableOpacity
+            style={styles.botaoAdicionar}
+            onPress={() => router.push('/cadProduto')}
+            accessibilityRole="button"
+            accessibilityLabel="Adicionar produto"
+          >
+            <Ionicons name="add" size={27} color="#111111" />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.espaco} />
+        )}
 
         <View style={styles.marca}>
           <Text style={styles.logo}>BELLAVER</Text>
@@ -120,7 +153,7 @@ export default function CatalogoMasculinoScreen() {
         contentContainerStyle={styles.conteudo}
       >
         <View style={styles.grade}>
-          {produtos.map((produto: Produto) => {
+          {produtosExibidos.map((produto) => {
             const estaFavoritado = favoritos.includes(produto.id);
 
             return (
@@ -210,6 +243,20 @@ const styles = StyleSheet.create({
 
   espaco: {
     width: 28,
+  },
+
+  botaoVoltar: {
+    width: 28,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  botaoAdicionar: {
+    width: 28,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   marca: {

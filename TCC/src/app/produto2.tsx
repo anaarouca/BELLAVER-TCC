@@ -19,6 +19,7 @@ import {
   atualizarImagemProduto,
   atualizarProdutoCadastrado,
   buscarProdutoCadastrado,
+  obterTamanhosDisponiveis,
   persistirImagemProduto,
   ProdutoCadastrado,
   removerProdutoCadastrado,
@@ -42,7 +43,6 @@ export default function ProdutoCadastradoScreen() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [modoEdicao, setModoEdicao] = useState(false);
   const [produtoEditando, setProdutoEditando] = useState<ProdutoCadastrado | null>(null);
-  const tamanhosDisponiveis = ['36', '38', '40', '42'];
 
   useEffect(() => {
     let ativo = true;
@@ -66,7 +66,14 @@ export default function ProdutoCadastradoScreen() {
         if (ativo) {
           setProduto(produtoEncontrado ?? null);
           setProdutoEditando(produtoEncontrado ?? null);
-          setTamanhoSelecionado(produtoEncontrado?.tamanhos[0] ?? '');
+          setTamanhoSelecionado(
+            produtoEncontrado
+              ? obterTamanhosDisponiveis(
+                  produtoEncontrado.categoria,
+                  produtoEncontrado.nome
+                )[0] ?? ''
+              : ''
+          );
         }
       })
       .catch((erro: unknown) => {
@@ -133,7 +140,6 @@ export default function ProdutoCadastradoScreen() {
         mediaTypes: ['images'],
         allowsEditing: true,
         quality: 0.6,
-        base64: true,
       });
 
       if (resultado.canceled || !resultado.assets[0]) {
@@ -145,10 +151,9 @@ export default function ProdutoCadastradoScreen() {
       const imagemSalva = await persistirImagemProduto(
         {
           uri: asset.uri,
-          base64: asset.base64,
-          mimeType: asset.mimeType,
-        },
-        imagemAtual
+          width: asset.width,
+          height: asset.height,
+        }
       );
       const produtoAtualizado = await atualizarImagemProduto(
         produtoAtual.id,
@@ -171,6 +176,14 @@ export default function ProdutoCadastradoScreen() {
   }
 
   const produtoAtual = produto;
+  const tamanhosDisponiveis = obterTamanhosDisponiveis(
+    produtoAtual.categoria,
+    produtoAtual.nome
+  );
+  const tamanhosEdicaoDisponiveis = obterTamanhosDisponiveis(
+    produtoEditando?.categoria ?? produtoAtual.categoria,
+    produtoEditando?.nome ?? produtoAtual.nome
+  );
   const favorito = favoritos.includes(produto.id);
   const precoOriginal = produto.precoOriginal.replace(/^R\$\s*/i, '').trim();
   const precoDesconto = produto.precoDesconto.replace(/^R\$\s*/i, '').trim();
@@ -194,7 +207,22 @@ export default function ProdutoCadastradoScreen() {
       return;
     }
 
-    setProdutoEditando({ ...produto, tamanhos: [...produto.tamanhos] });
+    const tamanhosDisponiveis = obterTamanhosDisponiveis(
+      produto.categoria,
+      produto.nome
+    );
+    const tamanhosSelecionados = produto.tamanhos.filter((tamanho) =>
+      tamanhosDisponiveis.includes(tamanho)
+    );
+    setProdutoEditando({
+      ...produto,
+      tamanhos:
+        tamanhosDisponiveis.length === 0
+          ? []
+          : tamanhosSelecionados.length > 0
+            ? tamanhosSelecionados
+            : tamanhosDisponiveis,
+    });
     setModoEdicao(true);
   }
 
@@ -233,6 +261,14 @@ export default function ProdutoCadastradoScreen() {
   }
 
   function alternarTamanhoEdicao(tamanho: string) {
+    const tamanhosDisponiveis = obterTamanhosDisponiveis(
+      produtoEditando?.categoria ?? produto?.categoria ?? 'feminino',
+      produtoEditando?.nome ?? produto?.nome ?? ''
+    );
+    if (!tamanhosDisponiveis.includes(tamanho)) {
+      return;
+    }
+
     setProdutoEditando((atual) => {
       if (!atual) {
         return atual;
@@ -254,10 +290,18 @@ export default function ProdutoCadastradoScreen() {
       return;
     }
 
+    const tamanhosDisponiveis = obterTamanhosDisponiveis(
+      produtoEditando.categoria,
+      produtoEditando.nome
+    );
+    const tamanhosSelecionados = produtoEditando.tamanhos.filter((tamanho) =>
+      tamanhosDisponiveis.includes(tamanho)
+    );
+
     if (
       !produtoEditando.nome.trim() ||
       !produtoEditando.descricao.trim() ||
-      produtoEditando.tamanhos.length === 0
+      (tamanhosDisponiveis.length > 0 && tamanhosSelecionados.length === 0)
     ) {
       Alert.alert('Atenção', 'Preencha o nome, a descrição e pelo menos um tamanho.');
       return;
@@ -269,7 +313,7 @@ export default function ProdutoCadastradoScreen() {
       precoDesconto: formatarPrecoTexto(produtoEditando.precoDesconto),
       descricao: produtoEditando.descricao.trim(),
       estoque: Math.max(0, Number(produtoEditando.estoque) || 0),
-      tamanhos: produtoEditando.tamanhos,
+      tamanhos: tamanhosSelecionados,
     };
 
     try {
@@ -280,7 +324,9 @@ export default function ProdutoCadastradoScreen() {
       setProduto(atualizado);
       setProdutoEditando(atualizado);
       setModoEdicao(false);
-      setTamanhoSelecionado(atualizado.tamanhos[0] ?? '');
+      setTamanhoSelecionado(
+        obterTamanhosDisponiveis(atualizado.categoria, atualizado.nome)[0] ?? ''
+      );
       Alert.alert('Produto atualizado', 'As alterações foram salvas com sucesso.');
     } catch (erro) {
       console.error('Erro ao atualizar produto:', erro);
@@ -312,7 +358,7 @@ export default function ProdutoCadastradoScreen() {
 
   function validarCompra(): boolean {
     const quantidadeNumerica = Number(quantidade);
-    if (!tamanhoSelecionado) {
+    if (tamanhosDisponiveis.length > 0 && !tamanhoSelecionado) {
       Alert.alert('Atenção', 'Selecione um tamanho.');
       return false;
     }
@@ -334,7 +380,7 @@ export default function ProdutoCadastradoScreen() {
     if (validarCompra()) {
       Alert.alert(
         'Produto adicionado!',
-        `${produtoAtual.nome}\nTamanho: ${tamanhoSelecionado}\nQuantidade: ${quantidade}`
+        `${produtoAtual.nome}${tamanhoSelecionado ? `\nTamanho: ${tamanhoSelecionado}` : ''}\nQuantidade: ${quantidade}`
       );
     }
   }
@@ -343,7 +389,7 @@ export default function ProdutoCadastradoScreen() {
     if (validarCompra()) {
       Alert.alert(
         'Comprar agora',
-        `Produto: ${produtoAtual.nome}\nTamanho: ${tamanhoSelecionado}\nQuantidade: ${quantidade}`
+        `Produto: ${produtoAtual.nome}${tamanhoSelecionado ? `\nTamanho: ${tamanhoSelecionado}` : ''}\nQuantidade: ${quantidade}`
       );
     }
   }
@@ -365,6 +411,70 @@ export default function ProdutoCadastradoScreen() {
       setExcluindo(false);
     }
   }
+
+  const nomeNormalizado = produto.nome
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  const ehAcessorio =
+    produto.categoria === 'acessorios' ||
+    /\b(?:anel|aneis)\b/.test(nomeNormalizado);
+  const seletorTamanho =
+    tamanhosDisponiveis.length > 0 ? (
+      <View
+        style={
+          ehAcessorio
+            ? styles.areaTamanhosAcessorios
+            : styles.areaTamanhos
+        }
+      >
+        <Text style={styles.tituloSecao}>Tamanho</Text>
+        <View style={styles.tamanhos}>
+          {tamanhosDisponiveis.map((tamanho) => (
+            <TouchableOpacity
+              key={tamanho}
+              style={[
+                styles.tamanho,
+                tamanhoSelecionado === tamanho && styles.tamanhoAtivo,
+              ]}
+              onPress={() => setTamanhoSelecionado(tamanho)}
+              accessibilityRole="button"
+              accessibilityState={{
+                selected: tamanhoSelecionado === tamanho,
+              }}
+            >
+              <Text
+                style={[
+                  styles.textoTamanho,
+                  tamanhoSelecionado === tamanho && styles.textoTamanhoAtivo,
+                ]}
+              >
+                {tamanho}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    ) : null;
+  const seletorQuantidade = (
+    <View
+      style={
+        ehAcessorio
+          ? styles.areaQuantidadeAcessorios
+          : styles.areaQuantidade
+      }
+    >
+      <Text style={styles.tituloSecao}>Quantidade</Text>
+      <TextInput
+        style={styles.inputQuantidade}
+        value={quantidade}
+        onChangeText={alterarQuantidade}
+        keyboardType="numeric"
+        maxLength={2}
+        accessibilityLabel="Quantidade do produto"
+      />
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -516,23 +626,37 @@ export default function ProdutoCadastradoScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text style={[styles.labelEditar, styles.labelTamanho]}>Tamanhos disponíveis</Text>
-            <View style={styles.tamanhosEdicao}>
-              {tamanhosDisponiveis.map((tamanho) => {
-                const selecionado = produtoEditando.tamanhos.includes(tamanho);
-                return (
-                  <TouchableOpacity
-                    key={tamanho}
-                    style={[styles.tamanhoEdicao, selecionado && styles.tamanhoEdicaoAtivo]}
-                    onPress={() => alternarTamanhoEdicao(tamanho)}
-                  >
-                    <Text style={[styles.textoTamanhoEdicao, selecionado && styles.textoTamanhoEdicaoAtivo]}>
-                      {tamanho}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            {tamanhosEdicaoDisponiveis.length > 0 && (
+              <>
+                <Text style={[styles.labelEditar, styles.labelTamanho]}>
+                  Tamanhos disponíveis
+                </Text>
+                <View style={styles.tamanhosEdicao}>
+                  {tamanhosEdicaoDisponiveis.map((tamanho) => {
+                    const selecionado = produtoEditando.tamanhos.includes(tamanho);
+                    return (
+                      <TouchableOpacity
+                        key={tamanho}
+                        style={[
+                          styles.tamanhoEdicao,
+                          selecionado && styles.tamanhoEdicaoAtivo,
+                        ]}
+                        onPress={() => alternarTamanhoEdicao(tamanho)}
+                      >
+                        <Text
+                          style={[
+                            styles.textoTamanhoEdicao,
+                            selecionado && styles.textoTamanhoEdicaoAtivo,
+                          ]}
+                        >
+                          {tamanho}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            )}
 
             <View style={styles.acoesModal}>
               <TouchableOpacity
@@ -568,48 +692,17 @@ export default function ProdutoCadastradoScreen() {
           <Text style={styles.precoOriginal}>R$ {precoOriginal}</Text>
           <Text style={styles.precoAtual}>R$ {precoDesconto}</Text>
 
-          <View style={styles.opcoes}>
-            <View style={styles.areaTamanhos}>
-              <Text style={styles.tituloSecao}>Tamanho</Text>
-              <View style={styles.tamanhos}>
-                {produto.tamanhos.map((tamanho) => (
-                  <TouchableOpacity
-                    key={tamanho}
-                    style={[
-                      styles.tamanho,
-                      tamanhoSelecionado === tamanho && styles.tamanhoAtivo,
-                    ]}
-                    onPress={() => setTamanhoSelecionado(tamanho)}
-                    accessibilityRole="button"
-                    accessibilityState={{
-                      selected: tamanhoSelecionado === tamanho,
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.textoTamanho,
-                        tamanhoSelecionado === tamanho &&
-                          styles.textoTamanhoAtivo,
-                      ]}
-                    >
-                      {tamanho}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+          {ehAcessorio ? (
+            <View style={styles.opcoesAcessorios}>
+              {seletorTamanho}
+              {seletorQuantidade}
             </View>
-            <View style={styles.areaQuantidade}>
-              <Text style={styles.tituloSecao}>Quantidade</Text>
-              <TextInput
-                style={styles.inputQuantidade}
-                value={quantidade}
-                onChangeText={alterarQuantidade}
-                keyboardType="numeric"
-                maxLength={2}
-                accessibilityLabel="Quantidade do produto"
-              />
+          ) : (
+            <View style={styles.opcoes}>
+              {seletorTamanho}
+              {seletorQuantidade}
             </View>
-          </View>
+          )}
 
           <Text style={styles.estoque}>
             {produto.estoque > 0
@@ -643,37 +736,39 @@ export default function ProdutoCadastradoScreen() {
           <Text style={styles.tituloSecao}>Descrição</Text>
           <Text style={styles.descricao}>{produto.descricao}</Text>
         </View>
-        <View style={styles.areaTabela}>
-          <View style={styles.linhaTabela}>
-            <Text style={[styles.celula, styles.cabecalhoTabela]}>
-              Tabela de medidas
-            </Text>
-            {produto.tamanhos.map((tamanho) => (
-              <Text
-                key={tamanho}
-                style={[styles.celula, styles.cabecalhoTabela]}
-              >
-                {tamanho}
+        {produto.categoria !== 'acessorios' && (
+          <View style={styles.areaTabela}>
+            <View style={styles.linhaTabela}>
+              <Text style={[styles.celula, styles.cabecalhoTabela]}>
+                Tabela de medidas
               </Text>
-            ))}
+              {produto.tamanhos.map((tamanho) => (
+                <Text
+                  key={tamanho}
+                  style={[styles.celula, styles.cabecalhoTabela]}
+                >
+                  {tamanho}
+                </Text>
+              ))}
+            </View>
+            <View style={styles.linhaTabela}>
+              <Text style={styles.celula}>Busto</Text>
+              {produto.tamanhos.map((tamanho) => (
+                <Text key={tamanho} style={styles.celula}>
+                  {medidasPorTamanho[tamanho]?.busto ?? '-'}
+                </Text>
+              ))}
+            </View>
+            <View style={styles.linhaTabela}>
+              <Text style={styles.celula}>Comprimento</Text>
+              {produto.tamanhos.map((tamanho) => (
+                <Text key={tamanho} style={styles.celula}>
+                  {medidasPorTamanho[tamanho]?.comprimento ?? '-'}
+                </Text>
+              ))}
+            </View>
           </View>
-          <View style={styles.linhaTabela}>
-            <Text style={styles.celula}>Busto</Text>
-            {produto.tamanhos.map((tamanho) => (
-              <Text key={tamanho} style={styles.celula}>
-                {medidasPorTamanho[tamanho]?.busto ?? '-'}
-              </Text>
-            ))}
-          </View>
-          <View style={styles.linhaTabela}>
-            <Text style={styles.celula}>Comprimento</Text>
-            {produto.tamanhos.map((tamanho) => (
-              <Text key={tamanho} style={styles.celula}>
-                {medidasPorTamanho[tamanho]?.comprimento ?? '-'}
-              </Text>
-            ))}
-          </View>
-        </View>
+        )}
       </ScrollView>
       <Modal
         visible={confirmarExclusao}
@@ -1054,11 +1149,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 8,
   },
+  opcoesAcessorios: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
   areaTamanhos: {
+    flex: 1,
+  },
+  areaTamanhosAcessorios: {
     flex: 1,
   },
   areaQuantidade: {
     alignItems: 'center',
+    marginLeft: 12,
+  },
+  areaQuantidadeAcessorios: {
+    alignItems: 'flex-end',
     marginLeft: 12,
   },
   inputQuantidade: {
