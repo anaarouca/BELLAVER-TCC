@@ -19,6 +19,7 @@ import {
   atualizarImagemProduto,
   atualizarProdutoCadastrado,
   buscarProdutoCadastrado,
+  obterTamanhosDisponiveis,
   persistirImagemProduto,
   ProdutoCadastrado,
   removerProdutoCadastrado,
@@ -42,7 +43,6 @@ export default function ProdutoCadastradoScreen() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [modoEdicao, setModoEdicao] = useState(false);
   const [produtoEditando, setProdutoEditando] = useState<ProdutoCadastrado | null>(null);
-  const tamanhosDisponiveis = ['36', '38', '40', '42'];
 
   useEffect(() => {
     let ativo = true;
@@ -66,7 +66,14 @@ export default function ProdutoCadastradoScreen() {
         if (ativo) {
           setProduto(produtoEncontrado ?? null);
           setProdutoEditando(produtoEncontrado ?? null);
-          setTamanhoSelecionado(produtoEncontrado?.tamanhos[0] ?? '');
+          setTamanhoSelecionado(
+            produtoEncontrado
+              ? obterTamanhosDisponiveis(
+                  produtoEncontrado.categoria,
+                  produtoEncontrado.nome
+                )[0] ?? ''
+              : ''
+          );
         }
       })
       .catch((erro: unknown) => {
@@ -177,6 +184,14 @@ export default function ProdutoCadastradoScreen() {
   }
 
   const produtoAtual = produto;
+  const tamanhosDisponiveis = obterTamanhosDisponiveis(
+    produtoAtual.categoria,
+    produtoAtual.nome
+  );
+  const tamanhosEdicaoDisponiveis = obterTamanhosDisponiveis(
+    produtoEditando?.categoria ?? produtoAtual.categoria,
+    produtoEditando?.nome ?? produtoAtual.nome
+  );
   const favorito = favoritos.includes(produto.id);
   const precoOriginal = produto.precoOriginal.replace(/^R\$\s*/i, '').trim();
   const precoDesconto = produto.precoDesconto.replace(/^R\$\s*/i, '').trim();
@@ -200,7 +215,22 @@ export default function ProdutoCadastradoScreen() {
       return;
     }
 
-    setProdutoEditando({ ...produto, tamanhos: [...produto.tamanhos] });
+    const tamanhosDisponiveis = obterTamanhosDisponiveis(
+      produto.categoria,
+      produto.nome
+    );
+    const tamanhosSelecionados = produto.tamanhos.filter((tamanho) =>
+      tamanhosDisponiveis.includes(tamanho)
+    );
+    setProdutoEditando({
+      ...produto,
+      tamanhos:
+        tamanhosDisponiveis.length === 0
+          ? []
+          : tamanhosSelecionados.length > 0
+            ? tamanhosSelecionados
+            : tamanhosDisponiveis,
+    });
     setModoEdicao(true);
   }
 
@@ -239,6 +269,14 @@ export default function ProdutoCadastradoScreen() {
   }
 
   function alternarTamanhoEdicao(tamanho: string) {
+    const tamanhosDisponiveis = obterTamanhosDisponiveis(
+      produtoEditando?.categoria ?? produto?.categoria ?? 'feminino',
+      produtoEditando?.nome ?? produto?.nome ?? ''
+    );
+    if (!tamanhosDisponiveis.includes(tamanho)) {
+      return;
+    }
+
     setProdutoEditando((atual) => {
       if (!atual) {
         return atual;
@@ -260,10 +298,18 @@ export default function ProdutoCadastradoScreen() {
       return;
     }
 
+    const tamanhosDisponiveis = obterTamanhosDisponiveis(
+      produtoEditando.categoria,
+      produtoEditando.nome
+    );
+    const tamanhosSelecionados = produtoEditando.tamanhos.filter((tamanho) =>
+      tamanhosDisponiveis.includes(tamanho)
+    );
+
     if (
       !produtoEditando.nome.trim() ||
       !produtoEditando.descricao.trim() ||
-      produtoEditando.tamanhos.length === 0
+      (tamanhosDisponiveis.length > 0 && tamanhosSelecionados.length === 0)
     ) {
       Alert.alert('Atenção', 'Preencha o nome, a descrição e pelo menos um tamanho.');
       return;
@@ -275,7 +321,7 @@ export default function ProdutoCadastradoScreen() {
       precoDesconto: formatarPrecoTexto(produtoEditando.precoDesconto),
       descricao: produtoEditando.descricao.trim(),
       estoque: Math.max(0, Number(produtoEditando.estoque) || 0),
-      tamanhos: produtoEditando.tamanhos,
+      tamanhos: tamanhosSelecionados,
     };
 
     try {
@@ -286,7 +332,9 @@ export default function ProdutoCadastradoScreen() {
       setProduto(atualizado);
       setProdutoEditando(atualizado);
       setModoEdicao(false);
-      setTamanhoSelecionado(atualizado.tamanhos[0] ?? '');
+      setTamanhoSelecionado(
+        obterTamanhosDisponiveis(atualizado.categoria, atualizado.nome)[0] ?? ''
+      );
       Alert.alert('Produto atualizado', 'As alterações foram salvas com sucesso.');
     } catch (erro) {
       console.error('Erro ao atualizar produto:', erro);
@@ -318,7 +366,7 @@ export default function ProdutoCadastradoScreen() {
 
   function validarCompra(): boolean {
     const quantidadeNumerica = Number(quantidade);
-    if (!tamanhoSelecionado) {
+    if (tamanhosDisponiveis.length > 0 && !tamanhoSelecionado) {
       Alert.alert('Atenção', 'Selecione um tamanho.');
       return false;
     }
@@ -340,7 +388,7 @@ export default function ProdutoCadastradoScreen() {
     if (validarCompra()) {
       Alert.alert(
         'Produto adicionado!',
-        `${produtoAtual.nome}\nTamanho: ${tamanhoSelecionado}\nQuantidade: ${quantidade}`
+        `${produtoAtual.nome}${tamanhoSelecionado ? `\nTamanho: ${tamanhoSelecionado}` : ''}\nQuantidade: ${quantidade}`
       );
     }
   }
@@ -349,7 +397,7 @@ export default function ProdutoCadastradoScreen() {
     if (validarCompra()) {
       Alert.alert(
         'Comprar agora',
-        `Produto: ${produtoAtual.nome}\nTamanho: ${tamanhoSelecionado}\nQuantidade: ${quantidade}`
+        `Produto: ${produtoAtual.nome}${tamanhoSelecionado ? `\nTamanho: ${tamanhoSelecionado}` : ''}\nQuantidade: ${quantidade}`
       );
     }
   }
@@ -372,7 +420,17 @@ export default function ProdutoCadastradoScreen() {
     }
   }
 
+<<<<<<< HEAD
   const ehAcessorio = produto.categoria === 'acessorios';
+=======
+  const nomeNormalizado = produto.nome
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  const ehAcessorio =
+    produto.categoria === 'acessorios' ||
+    /\b(?:anel|aneis)\b/.test(nomeNormalizado);
+>>>>>>> ae118774e7ed6765a45eefb40fd077d8a800667e
   const seletorTamanho =
     tamanhosDisponiveis.length > 0 ? (
       <View
@@ -1105,14 +1163,28 @@ const styles = StyleSheet.create({
   },
   opcoesAcessorios: {
     width: '100%',
+<<<<<<< HEAD
     flexDirection: 'column',
     alignItems: 'flex-start',
+=======
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  areaTamanhos: {
+    flex: 1,
+>>>>>>> ae118774e7ed6765a45eefb40fd077d8a800667e
+  },
+  areaTamanhosAcessorios: {
+    flex: 1,
   },
   areaQuantidade: {
     alignItems: 'center',
     marginLeft: 12,
   },
   areaQuantidadeAcessorios: {
+<<<<<<< HEAD
     width: '100%',
     alignItems: 'flex-start',
     marginLeft: 0,
@@ -1121,6 +1193,8 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   areaQuantidadeAcessorios: {
+=======
+>>>>>>> ae118774e7ed6765a45eefb40fd077d8a800667e
     alignItems: 'flex-end',
     marginLeft: 12,
   },
