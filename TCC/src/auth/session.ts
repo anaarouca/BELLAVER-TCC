@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const ADMIN_EMAIL = 'admin@bellaver.com';
-export const ADMIN_PASSWORD = 'BV!Luxo#Adm2026@';
+export const ADMIN_EMAIL = 'adminbellaver@gmail.com';
 export const USER_ROLE_KEY = '@bellaver:user-role';
 
 export type UserRole = 'admin' | 'customer';

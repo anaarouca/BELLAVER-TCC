@@ -105,16 +105,7 @@ export default function CadastroScreen() {
         displayName: nome.trim(),
       });
 
-      Alert.alert(
-        'Cadastro realizado!',
-        'Sua conta Bellaver foi criada com sucesso.',
-        [
-          {
-            text: 'Ir para o login',
-            onPress: () => router.replace('/login'),
-          },
-        ]
-      );
+      router.replace('/home');
     } catch (erro: any) {
       if (erro.code === 'auth/email-already-in-use') {
         Alert.alert('Atenção', 'Este e-mail já está cadastrado.');

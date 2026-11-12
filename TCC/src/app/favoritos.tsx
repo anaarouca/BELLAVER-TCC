@@ -269,6 +269,25 @@ export default function FavoritosScreen() {
             ]}
           >
             <TouchableOpacity
+              style={styles.voltar}
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace('/home');
+                }
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Voltar para a tela anterior"
+            >
+              <Ionicons
+                name="arrow-back-outline"
+                size={25}
+                color="#111111"
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
               style={styles.menu}
               onPress={() => router.push('/menu')}
             >
@@ -370,7 +389,12 @@ export default function FavoritosScreen() {
                   >
                     <Image
                       source={produto.imagem}
-                      style={styles.imagemProduto}
+                      style={[
+                        styles.imagemProduto,
+                        {
+                          filter: 'grayscale(100%)',
+                        } as any,
+                      ]}
                       resizeMode="cover"
                     />
                   </TouchableOpacity>
@@ -509,6 +533,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 6,
     color: '#111111',
+  },
+
+  voltar: {
+    position: 'absolute',
+    left: 22,
+    top: 30,
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   menu: {

@@ -1,7 +1,8 @@
 
-import React, { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import {
+  Alert,
   View,
   Text,
   Image,
@@ -10,64 +11,87 @@ import {
   StyleSheet,
   SafeAreaView,
   StatusBar,
+  ImageSourcePropType,
 } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
+import { router, useFocusEffect } from 'expo-router';
+import { useFavoritos } from '../hooks/useFavoritos';
+import { listarProdutosCadastrados } from '../data/produtosCadastrados';
+import { getUserRole } from '../auth/session';
+
+type ProdutoCatalogo = {
+  id: string;
+  nome: string;
+  antigo: string;
+  preco: string;
+  imagem: ImageSourcePropType;
+  cadastrado: boolean;
+};
 
 export default function Catalogo() {
-  const [favoritos, setFavoritos] = useState<number[]>([]);
+  const { favoritos, alternarFavorito } = useFavoritos();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [produtosCadastrados, setProdutosCadastrados] = useState<
+    Awaited<ReturnType<typeof listarProdutosCadastrados>>
+  >([]);
 
-  const produtos = [
-    {
-      id: 1,
-      nome: 'Anel de Ouro com Pérola Barroca Escultural',
-      antigo: 'R$ 11.800,00',
-      preco: 'R$ 9.850,00',
-      imagem: require('../../assets/Img/AneldeOuro.png'),
-    },
-    {
-      id: 2,
-      nome: 'Anel Duplo Escultural em Ouro 18k',
-      antigo: 'R$ 8.900,00',
-      preco: 'R$ 7.565,00',
-      imagem: require('../../assets/Img/AnelDuplo.png'),
-    },
-    {
-      id: 3,
-      nome: 'Brincos de Argola Dupla em Prata de Lei Texturizada',
-      antigo: 'R$ 12.500,00',
-      preco: 'R$ 10.400,00',
-      imagem: require('../../assets/Img/ArgolaDupla.png'),
-    },
-    {
-      id: 4,
-      nome: 'Conjunto de Pulseiras de Tênis de Diamantes',
-      antigo: 'R$ 3.800,00',
-      preco: 'R$ 3.230,00',
-      imagem: require('../../assets/Img/ConjuntodePulseiras.png'),
-    },
-    {
-      id: 5,
-      nome: 'Brincos de Argola Esculturais Orgânicos em Ouro',
-      antigo: 'R$ 2.800,00',
-      preco: 'R$ 2.250,00',
-      imagem: require('../../assets/Img/BrincoArgola.png'),
-    },
-    {
-      id: 6,
-      nome: 'Conjunto Relógio Cartier Tank e Pulseira Clover',
-      antigo: 'R$ 6.500,00',
-      preco: 'R$ 5.400,00',
-      imagem: require('../../assets/Img/ConjuntoRelogio.png'),
-    },
+  useFocusEffect(
+    useCallback(() => {
+      let ativo = true;
+
+      getUserRole()
+        .then((role) => {
+          if (ativo) {
+            setIsAdmin(role === 'admin');
+          }
+        })
+        .catch((erro: unknown) => {
+          console.error('Erro ao verificar perfil:', erro);
+        });
+
+      listarProdutosCadastrados()
+        .then((produtos) => {
+          if (ativo) {
+            setProdutosCadastrados(
+              produtos.filter((produto) => produto.categoria === 'acessorios')
+            );
+          }
+        })
+        .catch((erro: unknown) => {
+          console.error('Erro ao carregar acessórios cadastrados:', erro);
+          Alert.alert(
+            'Erro ao carregar catálogo',
+            erro instanceof Error
+              ? erro.message
+              : 'Não foi possível carregar os produtos cadastrados.'
+          );
+        });
+
+      return () => {
+        ativo = false;
+      };
+    }, [])
+  );
+
+  const produtos: ProdutoCatalogo[] = [
+    ...produtosCadastrados.map((produto) => ({
+      id: produto.id,
+      nome: produto.nome,
+      antigo: `R$ ${produto.precoOriginal.replace(/^R\$\s*/i, '').trim()}`,
+      preco: `R$ ${produto.precoDesconto.replace(/^R\$\s*/i, '').trim()}`,
+      imagem: { uri: produto.imagens[0] },
+      cadastrado: true,
+    })),
   ];
 
-  function alternarFavorito(id: number) {
-    if (favoritos.includes(id)) {
-      setFavoritos(favoritos.filter((item) => item !== id));
-    } else {
-      setFavoritos([...favoritos, id]);
+  function abrirProduto(id: string, cadastrado: boolean) {
+    if (cadastrado) {
+      router.push({ pathname: '/produto2', params: { id } });
+      return;
     }
+
+    router.push({ pathname: '/produto1', params: { id } });
   }
 
   return (
@@ -77,6 +101,32 @@ export default function Catalogo() {
       <View style={styles.container}>
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={styles.cabecalho}>
+            <TouchableOpacity
+              style={styles.botaoVoltar}
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace('/home');
+                }
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Voltar para a tela anterior"
+            >
+              <Ionicons name="arrow-back-outline" size={25} color="#111111" />
+            </TouchableOpacity>
+
+            {isAdmin && (
+              <TouchableOpacity
+                style={styles.botaoAdicionar}
+                onPress={() => router.push('/cadProduto')}
+                accessibilityRole="button"
+                accessibilityLabel="Adicionar produto"
+              >
+                <Ionicons name="add" size={27} color="#111111" />
+              </TouchableOpacity>
+            )}
+
             <Text style={styles.logo}>BELLAVER</Text>
             <Text style={styles.ano}>EST. 1972</Text>
             <TouchableOpacity style={styles.menu}>
@@ -91,16 +141,24 @@ export default function Catalogo() {
           <View style={styles.grade}>
             {produtos.map((produto) => (
               <View key={produto.id} style={styles.cardProduto}>
-                <View style={styles.containerImagem}>
+                <TouchableOpacity
+                  style={styles.containerImagem}
+                  onPress={() => abrirProduto(produto.id, produto.cadastrado)}
+                >
                   <Image
                     source={produto.imagem}
                     style={styles.imagem}
                     resizeMode="cover"
                   />
-                </View>
+                </TouchableOpacity>
 
                 <View style={styles.linhaNome}>
-                  <Text style={styles.nomeProduto}>{produto.nome}</Text>
+                  <TouchableOpacity
+                    style={styles.nomeClicavel}
+                    onPress={() => abrirProduto(produto.id, produto.cadastrado)}
+                  >
+                    <Text style={styles.nomeProduto}>{produto.nome}</Text>
+                  </TouchableOpacity>
 
                   <TouchableOpacity
                     onPress={() => alternarFavorito(produto.id)}
@@ -114,8 +172,12 @@ export default function Catalogo() {
                   </TouchableOpacity>
                 </View>
 
-                <Text style={styles.precoAntigo}>{produto.antigo}</Text>
-                <Text style={styles.precoAtual}>{produto.preco}</Text>
+                <TouchableOpacity
+                  onPress={() => abrirProduto(produto.id, produto.cadastrado)}
+                >
+                  <Text style={styles.precoAntigo}>{produto.antigo}</Text>
+                  <Text style={styles.precoAtual}>{produto.preco}</Text>
+                </TouchableOpacity>
               </View>
             ))}
           </View>
@@ -161,6 +223,20 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#111111',
     marginTop: 5,
+  },
+
+  botaoVoltar: {
+    position: 'absolute',
+    left: 12,
+    top: 23,
+    padding: 3,
+  },
+
+  botaoAdicionar: {
+    position: 'absolute',
+    left: 42,
+    top: 23,
+    padding: 3,
   },
 
   menu: {
@@ -220,6 +296,10 @@ const styles = StyleSheet.create({
     color: '#111111',
     lineHeight: 13,
     marginRight: 3,
+  },
+
+  nomeClicavel: {
+    flex: 1,
   },
 
   coracao: {

@@ -77,7 +77,13 @@ export default function Configuracao() {
 
             <TouchableOpacity
               style={styles.botaoVoltar}
-              onPress={() => router.replace("/menu")}
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/menu");
+                }
+              }}
               accessibilityRole="button"
               accessibilityLabel="Voltar"
             >

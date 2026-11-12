@@ -108,7 +108,15 @@ export default function ProdutoCadastradoScreen() {
             ? 'Não foi possível carregar este produto.'
             : 'Produto não encontrado.'}
         </Text>
-        <TouchableOpacity onPress={() => router.replace('/catalogo')}>
+        <TouchableOpacity
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/catalogo');
+            }
+          }}
+        >
           <Text style={styles.linkVoltar}>Voltar ao catálogo</Text>
         </TouchableOpacity>
       </View>
@@ -133,7 +141,6 @@ export default function ProdutoCadastradoScreen() {
         mediaTypes: ['images'],
         allowsEditing: true,
         quality: 0.6,
-        base64: true,
       });
 
       if (resultado.canceled || !resultado.assets[0]) {
@@ -145,10 +152,9 @@ export default function ProdutoCadastradoScreen() {
       const imagemSalva = await persistirImagemProduto(
         {
           uri: asset.uri,
-          base64: asset.base64,
-          mimeType: asset.mimeType,
-        },
-        imagemAtual
+          width: asset.width,
+          height: asset.height,
+        }
       );
       const produtoAtualizado = await atualizarImagemProduto(
         produtoAtual.id,
@@ -366,6 +372,64 @@ export default function ProdutoCadastradoScreen() {
     }
   }
 
+  const ehAcessorio = produto.categoria === 'acessorios';
+  const seletorTamanho =
+    tamanhosDisponiveis.length > 0 ? (
+      <View
+        style={
+          ehAcessorio
+            ? styles.areaTamanhosAcessorios
+            : styles.areaTamanhos
+        }
+      >
+        <Text style={styles.tituloSecao}>Tamanho</Text>
+        <View style={styles.tamanhos}>
+          {tamanhosDisponiveis.map((tamanho) => (
+            <TouchableOpacity
+              key={tamanho}
+              style={[
+                styles.tamanho,
+                tamanhoSelecionado === tamanho && styles.tamanhoAtivo,
+              ]}
+              onPress={() => setTamanhoSelecionado(tamanho)}
+              accessibilityRole="button"
+              accessibilityState={{
+                selected: tamanhoSelecionado === tamanho,
+              }}
+            >
+              <Text
+                style={[
+                  styles.textoTamanho,
+                  tamanhoSelecionado === tamanho && styles.textoTamanhoAtivo,
+                ]}
+              >
+                {tamanho}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    ) : null;
+  const seletorQuantidade = (
+    <View
+      style={
+        ehAcessorio
+          ? styles.areaQuantidadeAcessorios
+          : styles.areaQuantidade
+      }
+    >
+      <Text style={styles.tituloSecao}>Quantidade</Text>
+      <TextInput
+        style={styles.inputQuantidade}
+        value={quantidade}
+        onChangeText={alterarQuantidade}
+        keyboardType="numeric"
+        maxLength={2}
+        accessibilityLabel="Quantidade do produto"
+      />
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -516,23 +580,37 @@ export default function ProdutoCadastradoScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text style={[styles.labelEditar, styles.labelTamanho]}>Tamanhos disponíveis</Text>
-            <View style={styles.tamanhosEdicao}>
-              {tamanhosDisponiveis.map((tamanho) => {
-                const selecionado = produtoEditando.tamanhos.includes(tamanho);
-                return (
-                  <TouchableOpacity
-                    key={tamanho}
-                    style={[styles.tamanhoEdicao, selecionado && styles.tamanhoEdicaoAtivo]}
-                    onPress={() => alternarTamanhoEdicao(tamanho)}
-                  >
-                    <Text style={[styles.textoTamanhoEdicao, selecionado && styles.textoTamanhoEdicaoAtivo]}>
-                      {tamanho}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            {tamanhosEdicaoDisponiveis.length > 0 && (
+              <>
+                <Text style={[styles.labelEditar, styles.labelTamanho]}>
+                  Tamanhos disponíveis
+                </Text>
+                <View style={styles.tamanhosEdicao}>
+                  {tamanhosEdicaoDisponiveis.map((tamanho) => {
+                    const selecionado = produtoEditando.tamanhos.includes(tamanho);
+                    return (
+                      <TouchableOpacity
+                        key={tamanho}
+                        style={[
+                          styles.tamanhoEdicao,
+                          selecionado && styles.tamanhoEdicaoAtivo,
+                        ]}
+                        onPress={() => alternarTamanhoEdicao(tamanho)}
+                      >
+                        <Text
+                          style={[
+                            styles.textoTamanhoEdicao,
+                            selecionado && styles.textoTamanhoEdicaoAtivo,
+                          ]}
+                        >
+                          {tamanho}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            )}
 
             <View style={styles.acoesModal}>
               <TouchableOpacity
@@ -568,48 +646,17 @@ export default function ProdutoCadastradoScreen() {
           <Text style={styles.precoOriginal}>R$ {precoOriginal}</Text>
           <Text style={styles.precoAtual}>R$ {precoDesconto}</Text>
 
-          <View style={styles.opcoes}>
-            <View style={styles.areaTamanhos}>
-              <Text style={styles.tituloSecao}>Tamanho</Text>
-              <View style={styles.tamanhos}>
-                {produto.tamanhos.map((tamanho) => (
-                  <TouchableOpacity
-                    key={tamanho}
-                    style={[
-                      styles.tamanho,
-                      tamanhoSelecionado === tamanho && styles.tamanhoAtivo,
-                    ]}
-                    onPress={() => setTamanhoSelecionado(tamanho)}
-                    accessibilityRole="button"
-                    accessibilityState={{
-                      selected: tamanhoSelecionado === tamanho,
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.textoTamanho,
-                        tamanhoSelecionado === tamanho &&
-                          styles.textoTamanhoAtivo,
-                      ]}
-                    >
-                      {tamanho}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+          {ehAcessorio ? (
+            <View style={styles.opcoesAcessorios}>
+              {seletorTamanho}
+              {seletorQuantidade}
             </View>
-            <View style={styles.areaQuantidade}>
-              <Text style={styles.tituloSecao}>Quantidade</Text>
-              <TextInput
-                style={styles.inputQuantidade}
-                value={quantidade}
-                onChangeText={alterarQuantidade}
-                keyboardType="numeric"
-                maxLength={2}
-                accessibilityLabel="Quantidade do produto"
-              />
+          ) : (
+            <View style={styles.opcoes}>
+              {seletorTamanho}
+              {seletorQuantidade}
             </View>
-          </View>
+          )}
 
           <Text style={styles.estoque}>
             {produto.estoque > 0
@@ -643,37 +690,39 @@ export default function ProdutoCadastradoScreen() {
           <Text style={styles.tituloSecao}>Descrição</Text>
           <Text style={styles.descricao}>{produto.descricao}</Text>
         </View>
-        <View style={styles.areaTabela}>
-          <View style={styles.linhaTabela}>
-            <Text style={[styles.celula, styles.cabecalhoTabela]}>
-              Tabela de medidas
-            </Text>
-            {produto.tamanhos.map((tamanho) => (
-              <Text
-                key={tamanho}
-                style={[styles.celula, styles.cabecalhoTabela]}
-              >
-                {tamanho}
+        {produto.categoria !== 'acessorios' && (
+          <View style={styles.areaTabela}>
+            <View style={styles.linhaTabela}>
+              <Text style={[styles.celula, styles.cabecalhoTabela]}>
+                Tabela de medidas
               </Text>
-            ))}
+              {produto.tamanhos.map((tamanho) => (
+                <Text
+                  key={tamanho}
+                  style={[styles.celula, styles.cabecalhoTabela]}
+                >
+                  {tamanho}
+                </Text>
+              ))}
+            </View>
+            <View style={styles.linhaTabela}>
+              <Text style={styles.celula}>Busto</Text>
+              {produto.tamanhos.map((tamanho) => (
+                <Text key={tamanho} style={styles.celula}>
+                  {medidasPorTamanho[tamanho]?.busto ?? '-'}
+                </Text>
+              ))}
+            </View>
+            <View style={styles.linhaTabela}>
+              <Text style={styles.celula}>Comprimento</Text>
+              {produto.tamanhos.map((tamanho) => (
+                <Text key={tamanho} style={styles.celula}>
+                  {medidasPorTamanho[tamanho]?.comprimento ?? '-'}
+                </Text>
+              ))}
+            </View>
           </View>
-          <View style={styles.linhaTabela}>
-            <Text style={styles.celula}>Busto</Text>
-            {produto.tamanhos.map((tamanho) => (
-              <Text key={tamanho} style={styles.celula}>
-                {medidasPorTamanho[tamanho]?.busto ?? '-'}
-              </Text>
-            ))}
-          </View>
-          <View style={styles.linhaTabela}>
-            <Text style={styles.celula}>Comprimento</Text>
-            {produto.tamanhos.map((tamanho) => (
-              <Text key={tamanho} style={styles.celula}>
-                {medidasPorTamanho[tamanho]?.comprimento ?? '-'}
-              </Text>
-            ))}
-          </View>
-        </View>
+        )}
       </ScrollView>
       <Modal
         visible={confirmarExclusao}
@@ -1054,11 +1103,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 8,
   },
-  areaTamanhos: {
-    flex: 1,
+  opcoesAcessorios: {
+    width: '100%',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
   },
   areaQuantidade: {
     alignItems: 'center',
+    marginLeft: 12,
+  },
+  areaQuantidadeAcessorios: {
+    width: '100%',
+    alignItems: 'flex-start',
+    marginLeft: 0,
+    marginTop: 0,
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  areaQuantidadeAcessorios: {
+    alignItems: 'flex-end',
     marginLeft: 12,
   },
   inputQuantidade: {

@@ -210,6 +210,19 @@ export default function Doar() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.brand}>
+          <TouchableOpacity
+            style={styles.botaoVoltar}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/home");
+              }
+            }}
+          >
+            <Feather name="arrow-left" size={23} color="#111111" />
+          </TouchableOpacity>
+
           <Text style={styles.brandName}>BELLAHOPE</Text>
         </View>
 
@@ -440,6 +453,16 @@ const styles = StyleSheet.create({
   },
   brand: {
     height: 92,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  botaoVoltar: {
+    position: "absolute",
+    left: 5,
+    top: 30,
+    width: 35,
+    height: 35,
     alignItems: "center",
     justifyContent: "center",
   },

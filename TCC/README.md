@@ -27,6 +27,17 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Firebase catalog setup
+
+Product data and compressed images are shared through Cloud Firestore; Firebase Storage is not required. In the Firebase project, enable Email/Password authentication, create the `adminbellaver@gmail.com` administrator account, and create a Firestore database. If the administrator account already exists but its password is unknown, reset it in Firebase Authentication or use the administrator login's password-recovery link. On the first administrator login, the app sends an email verification link; verify it before managing products. Then log in to Firebase CLI and deploy the included Firestore rules from this directory:
+
+```bash
+npx firebase-tools login
+npx firebase-tools deploy --project bellaver-68080 --only firestore:rules
+```
+
+Catalogues and product images are publicly readable; only the verified administrator account can create, edit, or delete product records. Each image is compressed to at most 160 KB of data URL content and stored in its product document, leaving room below Firestore's 1 MiB document limit for up to three images and product fields. This uses the Firestore quota rather than requiring a paid Storage bucket. Existing products with images saved locally are migrated the next time the administrator opens a catalogue.
+
 ## Get a fresh project
 
 When you're ready, run:

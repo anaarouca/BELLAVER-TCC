@@ -1,17 +1,28 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { CATEGORIAS_PRODUTO } from '../data/produtosCadastrados';
 
 export default function MensagemProdutoScreen() {
-  const { id, nome } = useLocalSearchParams<{ id?: string; nome?: string }>();
+  const { id, nome, categoria } = useLocalSearchParams<{
+    id?: string;
+    nome?: string;
+    categoria?: string;
+  }>();
+
+  function irParaCatalogo() {
+    const opcao = CATEGORIAS_PRODUTO.find(
+      (item) => item.valor === categoria
+    );
+    router.replace(opcao?.rota ?? '/catalogo');
+  }
 
   function verProduto() {
-    if (!id) {
-      router.replace('/catalogo');
-      return;
+    if (id) {
+      router.replace({ pathname: '/produto2', params: { id } });
+    } else {
+      irParaCatalogo();
     }
-
-    router.replace({ pathname: '/produto2', params: { id } });
   }
 
   return (
@@ -34,7 +45,7 @@ export default function MensagemProdutoScreen() {
 
         <TouchableOpacity
           style={styles.botaoPrincipal}
-          onPress={verProduto}
+          onPress={irParaCatalogo}
           activeOpacity={0.8}
         >
           <Text style={styles.textoBotao}>Ir para o catálogo</Text>
@@ -42,9 +53,10 @@ export default function MensagemProdutoScreen() {
 
         <TouchableOpacity
           style={styles.botaoSecundario}
-          onPress={() => router.replace('/catalogo')}
+          onPress={verProduto}
           activeOpacity={0.8}
         >
+          <Text style={styles.textoSecundario}>Ver produto</Text>
         </TouchableOpacity>
       </View>
     </View>

@@ -95,7 +95,13 @@ export default function RedefinirSenhaScreen() {
 
       <TouchableOpacity
         style={styles.voltar}
-        onPress={() => router.replace('/login')}
+        onPress={() => {
+          if (router.canGoBack()) {
+            router.back();
+          } else {
+            router.replace('/login');
+          }
+        }}
       >
         <Ionicons name="chevron-back" size={24} color="#111111" />
       </TouchableOpacity>

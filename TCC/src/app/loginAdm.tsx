@@ -11,8 +11,14 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import {
+  sendEmailVerification,
+  signInWithEmailAndPassword,
+  signOut,
+} from 'firebase/auth';
+import { auth } from '../firebaseConfig';
+import {
   ADMIN_EMAIL,
-  ADMIN_PASSWORD,
+  clearUserRole,
   saveUserRole,
 } from '../auth/session';
 
@@ -27,17 +33,51 @@ export default function LoginAdmScreen() {
       return;
     }
 
-    if (
-      email.trim().toLowerCase() === ADMIN_EMAIL &&
-      senha === ADMIN_PASSWORD
-    ) {
-      await saveUserRole('admin');
-      router.replace('/catalogo');
+    if (email.trim().toLowerCase() !== ADMIN_EMAIL) {
+      setErroLogin('Credenciais de administrador inválidas.');
+      Alert.alert('Acesso negado', 'Este login não é válido para o administrador.');
       return;
     }
 
-    setErroLogin('Credenciais de administrador inválidas.');
-    Alert.alert('Acesso negado', 'Este login não é válido para o administrador.');
+    try {
+      const credencial = await signInWithEmailAndPassword(auth, ADMIN_EMAIL, senha);
+      if (!credencial.user.emailVerified) {
+        await sendEmailVerification(credencial.user);
+        await signOut(auth);
+        await clearUserRole();
+        setErroLogin('Enviamos um link para verificar o e-mail do administrador.');
+        Alert.alert(
+          'Verificação necessária',
+          'Abra o link enviado para o e-mail do administrador e entre novamente.'
+        );
+        return;
+      }
+
+      await saveUserRole('admin');
+      router.replace('/catalogo');
+    } catch (erro: unknown) {
+      console.error('Erro ao autenticar administrador:', erro);
+      const codigoErro =
+        erro &&
+        typeof erro === 'object' &&
+        'code' in erro &&
+        typeof erro.code === 'string'
+          ? erro.code
+          : '';
+      const mensagem =
+        codigoErro === 'auth/invalid-credential' ||
+        codigoErro === 'auth/user-not-found' ||
+        codigoErro === 'auth/wrong-password'
+          ? `A conta ${ADMIN_EMAIL} não foi encontrada ou a senha está incorreta. Confira a conta no Firebase Authentication ou redefina a senha.`
+          : codigoErro === 'auth/operation-not-allowed'
+            ? 'O login por e-mail e senha não está habilitado no Firebase Authentication.'
+            : 'Não foi possível autenticar o administrador. Verifique a conexão e tente novamente.';
+      setErroLogin(mensagem);
+      Alert.alert(
+        'Acesso negado',
+        mensagem
+      );
+    }
   }
 
   return (
@@ -83,6 +123,19 @@ export default function LoginAdmScreen() {
 
         <TouchableOpacity style={styles.button} activeOpacity={0.8} onPress={entrar}>
           <Text style={styles.buttonText}>Entrar</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() =>
+            router.push({
+              pathname: '/recuperar-senha',
+              params: { origem: 'admin', email: ADMIN_EMAIL },
+            })
+          }
+          accessibilityRole="button"
+          accessibilityLabel="Recuperar senha do administrador"
+        >
+          <Text style={styles.recuperarSenha}>ESQUECI A SENHA</Text>
         </TouchableOpacity>
 
         <View style={styles.lineBottom} />
@@ -201,6 +254,13 @@ const styles = StyleSheet.create({
     color: '#111111',
     fontSize: 18,
     fontWeight: '600',
+  },
+  recuperarSenha: {
+    color: '#F2F2F2',
+    fontSize: 12,
+    textAlign: 'center',
+    textDecorationLine: 'underline',
+    marginBottom: 18,
   },
 
   lineBottom: {
