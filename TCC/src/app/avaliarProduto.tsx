@@ -116,10 +116,7 @@ export default function AvaliarProduto() {
         JSON.stringify([...avaliacoesSalvas, avaliacao])
       );
 
-      Alert.alert(
-        "Avaliação enviada!",
-        "Obrigado por avaliar sua compra."
-      );
+      router.replace("/mensagem3");
       setNota(0);
       setComentario("");
       setFotos([]);
@@ -164,11 +161,11 @@ export default function AvaliarProduto() {
           {/* AVISO DE ENTREGA */}
           <View style={styles.aviso}>
             <Text style={styles.tituloAviso}>
-              SEU PRODUTO CHEGOU!
+              COMPARTILHE SUA OPINIÃO
             </Text>
 
             <Text style={styles.subtituloAviso}>
-              Avalie agora sua compra.
+              Avalie o produto.
             </Text>
           </View>
 
@@ -192,9 +189,6 @@ export default function AvaliarProduto() {
                 Risca de Giz Hudson
               </Text>
 
-              <Text style={styles.dataCompra}>
-                Comprado em 28/08/2026
-              </Text>
             </View>
           </View>
 

@@ -54,7 +54,7 @@ export default function LoginAdmScreen() {
       }
 
       await saveUserRole('admin');
-      router.replace('/catalogo');
+      router.replace('/home');
     } catch (erro: unknown) {
       console.error('Erro ao autenticar administrador:', erro);
       const codigoErro =

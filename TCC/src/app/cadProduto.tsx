@@ -46,19 +46,9 @@ export default function CadastroProdutoScreen() {
   const [salvando, setSalvando] = useState(false);
   const [autorizado, setAutorizado] = useState(false);
   const tamanhos = obterTamanhosDisponiveis(categoria, nome);
-
-  useEffect(() => {
-    setTamanhosSelecionados((atuais) => {
-      const selecionadosValidos = atuais.filter((tamanho) =>
-        tamanhos.includes(tamanho)
-      );
-      if (selecionadosValidos.length > 0) {
-        return selecionadosValidos;
-      }
-
-      return categoria === 'acessorios' ? tamanhos : tamanhos.slice(0, 1);
-    });
-  }, [categoria, nome]);
+  const tamanhosSelecionadosValidos = tamanhosSelecionados.filter((tamanho) =>
+    tamanhos.includes(tamanho)
+  );
 
   useEffect(() => {
     let ativo = true;
@@ -102,6 +92,33 @@ export default function CadastroProdutoScreen() {
       unsubscribe();
     };
   }, []);
+
+  function sincronizarTamanhosSelecionados(
+    novaCategoria: CategoriaProduto | null,
+    novoNome: string
+  ) {
+    const tamanhosDisponiveis = obterTamanhosDisponiveis(
+      novaCategoria,
+      novoNome
+    );
+    setTamanhosSelecionados((atuais) => {
+      const selecionadosValidos = atuais.filter((tamanho) =>
+        tamanhosDisponiveis.includes(tamanho)
+      );
+      if (selecionadosValidos.length > 0) {
+        return selecionadosValidos;
+      }
+
+      return novaCategoria === 'acessorios'
+        ? tamanhosDisponiveis
+        : tamanhosDisponiveis.slice(0, 1);
+    });
+  }
+
+  function alterarNome(novoNome: string) {
+    setNome(novoNome);
+    sincronizarTamanhosSelecionados(categoria, novoNome);
+  }
 
   if (!autorizado) {
     return null;
@@ -163,9 +180,6 @@ export default function CadastroProdutoScreen() {
   }
 
   async function salvarProduto() {
-    const tamanhosValidos = tamanhosSelecionados.filter((tamanho) =>
-      tamanhos.includes(tamanho)
-    );
     if (
       !nome.trim() ||
       !precoOriginal.trim() ||
@@ -173,7 +187,7 @@ export default function CadastroProdutoScreen() {
       !descricao.trim() ||
       !categoria ||
       !imagens.some((imagem) => imagem !== null) ||
-      (tamanhos.length > 0 && tamanhosValidos.length === 0)
+      (tamanhos.length > 0 && tamanhosSelecionadosValidos.length === 0)
     ) {
       Alert.alert('Atenção', 'Preencha todos os campos antes de salvar.');
       return;
@@ -210,7 +224,7 @@ export default function CadastroProdutoScreen() {
         descricao: descricao.trim(),
         imagens: imagensPersistidas,
         estoque,
-        tamanhos: tamanhosValidos,
+        tamanhos: tamanhosSelecionadosValidos,
       });
 
       router.replace({
@@ -245,7 +259,20 @@ export default function CadastroProdutoScreen() {
       >
         {/* CABEÇALHO */}
         <View style={styles.cabecalho}>
-          <View style={styles.espacoLateral} />
+          <TouchableOpacity
+            style={styles.botaoVoltar}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/loginAdm');
+              }
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Voltar"
+          >
+            <Ionicons name="arrow-back-outline" size={25} color="#111111" />
+          </TouchableOpacity>
 
           <View style={styles.logoContainer}>
             <Text style={styles.logo}>BELLAVER</Text>
@@ -277,7 +304,7 @@ export default function CadastroProdutoScreen() {
             placeholder="Insira o nome do produto..."
             placeholderTextColor="#888888"
             value={nome}
-            onChangeText={setNome}
+            onChangeText={alterarNome}
           />
 
           <Text style={styles.label}>Categoria do Produto</Text>
@@ -291,7 +318,10 @@ export default function CadastroProdutoScreen() {
                     styles.botaoCategoria,
                     selecionada && styles.categoriaSelecionada,
                   ]}
-                  onPress={() => setCategoria(opcao.valor)}
+                  onPress={() => {
+                    setCategoria(opcao.valor);
+                    sincronizarTamanhosSelecionados(opcao.valor, nome);
+                  }}
                   accessibilityRole="button"
                   accessibilityState={{ selected: selecionada }}
                   accessibilityLabel={`Categoria ${opcao.nome}`}
@@ -366,7 +396,8 @@ export default function CadastroProdutoScreen() {
               </Text>
               <View style={styles.listaTamanhos}>
                 {tamanhos.map((tamanho) => {
-                  const selecionado = tamanhosSelecionados.includes(tamanho);
+                  const selecionado =
+                    tamanhosSelecionadosValidos.includes(tamanho);
                   return (
                     <TouchableOpacity
                       key={tamanho}
@@ -466,8 +497,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
 
-  espacoLateral: {
+  botaoVoltar: {
     width: 28,
+    height: 35,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   logoContainer: {

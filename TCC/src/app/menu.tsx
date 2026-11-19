@@ -1,18 +1,18 @@
 
 import { useCallback, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar } from 'react-native';
+import { Alert, View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getUserRole, type UserRole } from '../auth/session';
+import { encerrarSessao, getUserRole, type UserRole } from '../auth/session';
 
 const opcoes = [
   { nome: 'Configurações', icone: 'settings-outline' as const, rota: '/telaperfil' },
+  { nome: 'Meus endereços', icone: 'location-outline' as const, rota: '/enderecos' },
   { nome: 'Favoritos / sacola', icone: 'heart-outline' as const, rota: '/favoritos' },
+  { nome: 'Recebidos', icone: 'mail-open-outline' as const, rota: '/avaliarProduto' },
   { nome: 'Bella Hope', icone: 'ellipse-outline' as const, rota: '/homeBellahope' },
   { nome: 'Categorias', icone: 'grid-outline' as const, rota: '/categoria' },
-  { nome: 'Notificações', icone: 'notifications-outline' as const, rota: '/notificacoes' },
-  { nome: 'Rastreamento do pedido', icone: 'location-outline' as const, rota: '/rastreamento' },
-  { nome: 'Meus pedidos', icone: 'mail-outline' as const, rota: '/pedidos' },
+  { nome: 'Rastreamento do pedido', icone: 'location-outline' as const, rota: '/rastreamentodopedido' },
   { nome: 'Filtros', icone: 'options-outline' as const, rota: '/filtroPesquisa' },
   { nome: 'Catálogo', icone: 'document-text-outline' as const, rota: '/catalogo' },
   { nome: 'Pesquisar', icone: 'search-outline' as const, rota: '/pesquisa' },
@@ -62,7 +62,12 @@ export default function MenuScreen() {
   }
 
   function sairDaConta() {
-    router.replace('/login');
+    encerrarSessao()
+      .then(() => router.replace('/login'))
+      .catch((erro: unknown) => {
+        console.error('Erro ao encerrar sessão:', erro);
+        Alert.alert('Erro ao sair', 'Não foi possível encerrar sua sessão. Tente novamente.');
+      });
   }
 
   return (
@@ -79,7 +84,13 @@ export default function MenuScreen() {
 
         <TouchableOpacity
           style={styles.fechar}
-          onPress={() => router.replace('/home')}
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/home');
+            }
+          }}
         >
           <Ionicons name="close" size={27} color="#111111" />
         </TouchableOpacity>

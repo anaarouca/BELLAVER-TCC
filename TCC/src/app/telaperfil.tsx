@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { encerrarSessao } from "../auth/session";
 
 export default function Configuracao() {
   const router = useRouter();
@@ -23,6 +24,11 @@ export default function Configuracao() {
       acao: () => router.push("/dadospessoais"),
     },
     {
+      titulo: "Meus endereços",
+      icone: "location-outline" as const,
+      acao: () => router.push("/enderecos"),
+    },
+    {
       titulo: "Alterar senha",
       icone: "lock-closed-outline" as const,
       acao: () =>
@@ -32,13 +38,6 @@ export default function Configuracao() {
         }),
     },
   ];
-
-  function abrirPagina(nome: string) {
-    Alert.alert(
-      nome,
-      `A página "${nome}" poderá ser conectada aqui.`
-    );
-  }
 
   function sair() {
     Alert.alert(
@@ -52,7 +51,17 @@ export default function Configuracao() {
         {
           text: "Sair",
           style: "destructive",
-          onPress: () => router.replace("/login"),
+          onPress: () => {
+            encerrarSessao()
+              .then(() => router.replace("/login"))
+              .catch((erro: unknown) => {
+                console.error("Erro ao encerrar sessão:", erro);
+                Alert.alert(
+                  "Erro ao sair",
+                  "Não foi possível encerrar sua sessão. Tente novamente."
+                );
+              });
+          },
         },
       ]
     );

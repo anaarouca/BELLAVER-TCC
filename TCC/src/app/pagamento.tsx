@@ -1,1056 +1,905 @@
 
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   View,
   Text,
   Image,
-  ScrollView,
-  TouchableOpacity,
   TextInput,
+  TouchableOpacity,
+  ScrollView,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   Alert,
+  ActivityIndicator,
   Platform,
-} from "react-native";
+} from 'react-native';
 
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import QRCode from "react-native-qrcode-svg";
-import * as Print from "expo-print";
-import * as Sharing from "expo-sharing";
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { useSacola } from '../hooks/useSacola';
 
-export default function Pagamento() {
-  const router = useRouter();
+export default function PagamentoScreen() {
+  const { itens, carregando, finalizarCompra } = useSacola();
 
-  const [metodo, setMetodo] = useState("");
-  const [numeroCartao, setNumeroCartao] = useState("");
-  const [titular, setTitular] = useState("");
-  const [validade, setValidade] = useState("");
-  const [cvv, setCvv] = useState("");
+  const [metodo, setMetodo] = useState('');
+  const [numeroCartao, setNumeroCartao] = useState('');
+  const [titular, setTitular] = useState('');
+  const [validade, setValidade] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [parcelamento, setParcelamento] = useState(1);
+  const [mostrarParcelas, setMostrarParcelas] = useState(false);
+  const [finalizando, setFinalizando] = useState(false);
 
-  const [parcelas, setParcelas] = useState(
-    "1x de R$ 994,00 sem juros"
+  // VALORES REAIS DA SACOLA
+  const subtotal = itens.reduce(
+    (total, item) => total + item.preco * item.quantidade,
+    0
   );
 
-  const [mostrarParcelas, setMostrarParcelas] = useState(false);
-  const [gerandoBoleto, setGerandoBoleto] = useState(false);
+  const total = subtotal;
 
-  const valorTotal = 994;
+  const formatarPreco = (valor: number) =>
+    valor.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    });
 
-  const produtosPagamento = [
-    {
-      nome: "Colete Alfaiataria Risca de Giz Hudson",
-      tamanho: "Tamanho - 36",
-      qtd: "Qtd: 1",
-      imagem: require("../../assets/Img/ConjuntoAlfaiatariaOff.png"),
-    },
-    {
-      nome: "Conjunto Alfaiataria Off-White",
-      tamanho: "Tamanho - 40",
-      qtd: "Qtd: 1",
-      imagem: require("../../assets/Img/ConjuntoSocialPreto.png"),
-    },
-  ];
+  const quantidadeTotal = itens.reduce(
+    (total, item) => total + item.quantidade,
+    0
+  );
 
-  const opcoesParcelas = [
-    "1x de R$ 994,00 sem juros",
-    "2x de R$ 497,00 sem juros",
-    "3x de R$ 331,33 sem juros",
-    "4x de R$ 248,50 sem juros",
-    "5x de R$ 198,80 sem juros",
-    "6x de R$ 165,67 sem juros",
-  ];
+  function selecionarMetodo(opcao: string) {
+    const novoMetodo = metodo === opcao ? '' : opcao;
+    setMetodo(novoMetodo);
 
-  // GERAR BOLETO EM PDF
-  async function gerarBoleto() {
-    if (gerandoBoleto) return;
-
-    setMetodo("boleto");
-    setGerandoBoleto(true);
-
-    const numeroBoleto = "23793.38128 60000.000012 34000.000000 1";
-
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8" />
-        <style>
-          body {
-            font-family: Arial, sans-serif;
-            padding: 35px;
-            color: #111;
-          }
-
-          .topo {
-            text-align: center;
-            border-bottom: 1px solid #222;
-            padding-bottom: 20px;
-          }
-
-          .logo {
-            font-size: 28px;
-            letter-spacing: 8px;
-          }
-
-          .ano {
-            font-size: 11px;
-            margin-top: 8px;
-          }
-
-          h2 {
-            font-size: 18px;
-            margin-top: 35px;
-          }
-
-          .linha {
-            border-bottom: 1px solid #ddd;
-            padding: 13px 0;
-            font-size: 13px;
-          }
-
-          .valor {
-            font-size: 23px;
-            font-weight: bold;
-            margin-top: 25px;
-          }
-
-          .codigo {
-            margin-top: 35px;
-            padding: 20px;
-            border: 1px solid #ddd;
-            font-size: 17px;
-            text-align: center;
-            letter-spacing: 2px;
-          }
-
-          .aviso {
-            margin-top: 35px;
-            font-size: 11px;
-            color: #777;
-            line-height: 1.6;
-          }
-
-          .rodape {
-            margin-top: 45px;
-            text-align: center;
-            font-size: 10px;
-            color: #888;
-          }
-        </style>
-      </head>
-
-      <body>
-
-        <div class="topo">
-          <div class="logo">BELLAVER</div>
-          <div class="ano">EST. 1972</div>
-        </div>
-
-        <h2>BOLETO BANCÁRIO</h2>
-
-        <div class="linha">
-          <strong>Beneficiário:</strong> Bellaver
-        </div>
-
-        <div class="linha">
-          <strong>Pedido:</strong> BV-2026-001
-        </div>
-
-        <div class="linha">
-          <strong>Data de emissão:</strong> 06/11/2026
-        </div>
-
-        <div class="linha">
-          <strong>Vencimento:</strong> Documento demonstrativo
-        </div>
-
-        <div class="linha">
-          <strong>Forma de pagamento:</strong> Boleto bancário
-        </div>
-
-        <div class="valor">
-          Valor: R$ 994,00
-        </div>
-
-        <div class="codigo">
-          ${numeroBoleto}
-        </div>
-
-        <div class="aviso">
-          DOCUMENTO DE DEMONSTRAÇÃO DO PROJETO BELLAVER.
-          Este documento não representa uma cobrança bancária real.
-          Não realize pagamentos utilizando estas informações.
-        </div>
-
-        <div class="rodape">
-          BELLAVER — ELEGÂNCIA E MODERNIDADE
-        </div>
-
-      </body>
-      </html>
-    `;
-
-    try {
-      if (Platform.OS === "web") {
-        await Print.printAsync({ html });
-      } else {
-        const arquivo = await Print.printToFileAsync({
-          html: html,
-          base64: false,
-        });
-
-        const compartilhamentoDisponivel =
-          await Sharing.isAvailableAsync();
-
-        if (compartilhamentoDisponivel) {
-          await Sharing.shareAsync(arquivo.uri, {
-            mimeType: "application/pdf",
-            dialogTitle: "Salvar boleto Bellaver",
-            UTI: "com.adobe.pdf",
-          });
-        } else {
-          Alert.alert(
-            "Boleto gerado",
-            "O documento foi gerado, mas o compartilhamento não está disponível neste dispositivo."
-          );
-        }
-      }
-    } catch (erro) {
-      Alert.alert(
-        "Erro",
-        "Não foi possível gerar o boleto. Tente novamente."
-      );
-    } finally {
-      setGerandoBoleto(false);
+    if (novoMetodo === 'boleto') {
+      baixarBoleto();
     }
   }
 
-  // FINALIZAR PAGAMENTO
-  function finalizarPagamento() {
-    if (metodo === "") {
+  function baixarBoleto() {
+    const conteudo = [
+      'BOLETO BANCÁRIO BELLAVER',
+      '',
+      `Valor da compra: ${formatarPreco(total)}`,
+      `Quantidade de itens: ${quantidadeTotal}`,
+      '',
+      'Este documento é uma simulação de boleto bancário.',
+    ].join('\n');
+
+    if (Platform.OS === 'web') {
+      const arquivo = new Blob([conteudo], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(arquivo);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'BOLETO BANCÁRIO BELLAVER.txt';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       Alert.alert(
-        "Forma de pagamento",
-        "Selecione uma forma de pagamento para continuar."
+        'Boleto gerado',
+        'O boleto foi gerado e o download foi iniciado.'
       );
       return;
     }
 
-    if (metodo === "cartao") {
+    Alert.alert(
+      'Boleto gerado',
+      'O boleto foi gerado. O download está disponível na versão web.'
+    );
+  }
+
+  function formatarNumeroCartao(texto: string) {
+    const numeros = texto.replace(/\D/g, '').slice(0, 16);
+
+    setNumeroCartao(
+      numeros.replace(/(\d{4})(?=\d)/g, '$1 ')
+    );
+  }
+
+  function formatarValidade(texto: string) {
+    const numeros = texto.replace(/\D/g, '').slice(0, 4);
+
+    if (numeros.length > 2) {
+      setValidade(
+        numeros.slice(0, 2) + '/' + numeros.slice(2)
+      );
+    } else {
+      setValidade(numeros);
+    }
+  }
+
+  async function finalizarPagamento() {
+    if (carregando) {
+      return;
+    }
+
+    if (itens.length === 0) {
+      Alert.alert('Sacola vazia', 'Adicione produtos antes de continuar.');
+      return;
+    }
+
+    if (!metodo) {
+      Alert.alert(
+        'Atenção',
+        'Selecione uma forma de pagamento.'
+      );
+      return;
+    }
+
+    if (metodo === 'cartao') {
+      const numero = numeroCartao.replace(/\s/g, '');
+
       if (
-        numeroCartao.trim() === "" ||
-        titular.trim() === "" ||
-        validade.trim() === "" ||
-        cvv.trim() === ""
+        numero.length !== 16 ||
+        !titular.trim() ||
+        validade.length !== 5 ||
+        cvv.length < 3
       ) {
         Alert.alert(
-          "Dados incompletos",
-          "Preencha todos os campos do cartão."
+          'Dados incompletos',
+          'Preencha corretamente os dados do cartão.'
         );
         return;
       }
 
-      Alert.alert(
-        "Bellaver",
-        "Pagamento demonstrativo realizado com sucesso! Nenhuma cobrança foi feita."
-      );
+      const [mes, ano] = validade.split('/');
 
+      if (
+        Number(mes) < 1 ||
+        Number(mes) > 12 ||
+        Number(ano) < 1
+      ) {
+        Alert.alert('Validade inválida', 'Confira a validade do cartão.');
+        return;
+      }
+    }
+
+    if (finalizando) {
       return;
     }
 
-    if (metodo === "pix") {
+    setFinalizando(true);
+    try {
+      await finalizarCompra();
+      router.replace('/mensagem2');
+    } catch (erro: unknown) {
       Alert.alert(
-        "Pagamento PIX",
-        "Este QR Code é ilustrativo. Para pagamentos reais, será necessária uma integração com um serviço de pagamento."
+        'Não foi possível finalizar',
+        erro instanceof Error
+          ? erro.message
+          : 'Tente novamente em alguns instantes.'
       );
-
-      return;
-    }
-
-    if (metodo === "boleto") {
-      Alert.alert(
-        "Bellaver",
-        "O boleto demonstrativo foi disponibilizado para salvar ou compartilhar."
-      );
+    } finally {
+      setFinalizando(false);
     }
   }
 
+  function LinhaPagamento({
+    tipo,
+    titulo,
+    icone,
+  }: {
+    tipo: string;
+    titulo: string;
+    icone: React.ComponentProps<typeof Ionicons>['name'];
+  }) {
+    const selecionado = metodo === tipo;
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.opcaoPagamento,
+          selecionado && styles.opcaoSelecionada,
+        ]}
+        onPress={() => selecionarMetodo(tipo)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.ladoOpcao}>
+          <View style={styles.radio}>
+            {selecionado && (
+              <View style={styles.radioInterno} />
+            )}
+          </View>
+
+          <Text style={styles.textoOpcao}>{titulo}</Text>
+        </View>
+
+        <Ionicons
+          name={icone}
+          size={21}
+          color="#111111"
+        />
+      </TouchableOpacity>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.tela}>
+    <View style={styles.container}>
       <StatusBar
         barStyle="dark-content"
         backgroundColor="#FFFFFF"
       />
 
-      <View style={styles.container}>
-
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.conteudo}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* CABEÇALHO */}
-
         <View style={styles.cabecalho}>
+          <View style={styles.espaco} />
+
+          <TouchableOpacity
+            style={styles.logoContainer}
+            onPress={() => router.replace('/home')}
+          >
+            <Text style={styles.logo}>BELLAVER</Text>
+            <Text style={styles.subLogo}>EST. 1972</Text>
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.menu}
-            onPress={() => router.push("/menu")}
+            onPress={() => router.push('/menu')}
           >
             <Ionicons
               name="menu-outline"
-              size={25}
+              size={27}
               color="#111111"
             />
           </TouchableOpacity>
-
-          <Text style={styles.logo}>BELLAVER</Text>
-          <Text style={styles.ano}>EST. 1972</Text>
-
         </View>
 
-        <ScrollView
-          style={styles.conteudo}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+        <View style={styles.divisoriaTopo} />
+
+        {/* VOLTAR */}
+        <TouchableOpacity
+          style={styles.voltar}
+          onPress={() => router.replace('/sacola')}
         >
+          <Ionicons
+            name="arrow-back-outline"
+            size={14}
+            color="#777777"
+          />
 
-          {/* VOLTAR */}
+          <Text style={styles.textoVoltar}>
+            VOLTAR PARA A SACOLA
+          </Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.voltar}
-            onPress={() => router.back()}
-          >
-            <Ionicons
-              name="arrow-back-outline"
-              size={13}
-              color="#888888"
-            />
-
-            <Text style={styles.textoVoltar}>
-              VOLTAR PARA A SACOLA
-            </Text>
-          </TouchableOpacity>
-
-          {/* TÍTULO */}
-
+        {/* TÍTULO */}
+        <View style={styles.tituloArea}>
           <Text style={styles.titulo}>PAGAMENTO</Text>
 
           <Text style={styles.subtitulo}>
             ESCOLHA A MELHOR FORMA PARA VOCÊ
           </Text>
+        </View>
 
-          {/* PRODUTOS */}
-
-          <View style={styles.caixaProdutos}>
-
-            {produtosPagamento.map((produto, index) => (
-
+        {/* PRODUTOS REAIS DA SACOLA */}
+        <View style={styles.cardProdutos}>
+          {carregando ? (
+            <ActivityIndicator color="#111111" />
+          ) : itens.length === 0 ? (
+            <Text style={styles.sacolaVazia}>
+              Sua sacola está vazia.
+            </Text>
+          ) : (
+            itens.map((item) => (
               <View
-                key={`${produto.nome}-${index}`}
+                key={item.id}
                 style={styles.produto}
               >
+                {item.imagem ? (
+                  <Image
+                    source={{ uri: item.imagem }}
+                    style={styles.imagemProduto}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={styles.imagemSemFoto}>
+                    <Ionicons
+                      name="image-outline"
+                      size={25}
+                      color="#AAAAAA"
+                    />
+                  </View>
+                )}
 
-                <Image
-                  source={produto.imagem}
-                  style={styles.fotoProduto}
-                  resizeMode="cover"
-                />
-
-                <View style={styles.detalhesProduto}>
-
-                  <Text style={styles.nomeProduto}>
-                    {produto.nome}
+                <View style={styles.infoProduto}>
+                  <Text
+                    style={styles.nomeProduto}
+                    numberOfLines={2}
+                  >
+                    {item.nome}
                   </Text>
 
-                  <Text style={styles.infoProduto}>
-                    {produto.tamanho}
+                  <Text style={styles.detalheProduto}>
+                    {item.tamanho
+                      ? `Tamanho - ${item.tamanho}`
+                      : 'Tamanho único'}
                   </Text>
 
-                  <Text style={styles.infoProduto}>
-                    {produto.qtd}
+                  <Text style={styles.detalheProduto}>
+                    Qtd: {item.quantidade}
                   </Text>
 
+                  <Text style={styles.precoProduto}>
+                    {formatarPreco(item.preco * item.quantidade)}
+                  </Text>
                 </View>
-
               </View>
+            ))
+          )}
+        </View>
 
-            ))}
+        {/* RESUMO */}
+        <View style={styles.resumo}>
+          <View style={styles.linhaResumo}>
+            <Text style={styles.textoResumo}>Subtotal</Text>
 
+            <Text style={styles.textoResumo}>
+              {formatarPreco(subtotal)}
+            </Text>
           </View>
 
-          {/* RESUMO */}
-
-          <View style={styles.resumo}>
-
-            <View style={styles.linhaResumo}>
-              <Text style={styles.textoResumo}>Subtotal</Text>
-              <Text style={styles.textoResumo}>R$ 994,00</Text>
-            </View>
-
-            <View style={styles.linhaResumo}>
-              <Text style={styles.textoResumo}>Frete</Text>
-              <Text style={styles.textoResumo}>Grátis</Text>
-            </View>
-
-            <View style={styles.linhaResumo}>
-              <Text style={styles.total}>Total</Text>
-              <Text style={styles.total}>R$ 994,00</Text>
-            </View>
-
+          <View style={styles.linhaResumo}>
+            <Text style={styles.textoResumo}>Frete</Text>
+            <Text style={styles.textoResumo}>Grátis</Text>
           </View>
 
-          {/* MÉTODOS DE PAGAMENTO */}
+          <View style={styles.linhaTotal}>
+            <Text style={styles.textoTotal}>Total</Text>
 
-          <Text style={styles.rotuloMetodo}>
-            MÉTODO DE PAGAMENTO
+            <Text style={styles.textoTotal}>
+              {formatarPreco(total)}
+            </Text>
+          </View>
+        </View>
+
+        {/* FORMAS DE PAGAMENTO */}
+        <Text style={styles.tituloMetodo}>
+          MÉTODO DE PAGAMENTO
+        </Text>
+
+        {/* CARTÃO */}
+        <LinhaPagamento
+          tipo="cartao"
+          titulo="CARTÃO DE CRÉDITO"
+          icone="card-outline"
+        />
+
+        {metodo === 'cartao' && (
+          <View style={styles.camposCartao}>
+            <TextInput
+              style={styles.input}
+              placeholder="NÚMERO DO CARTÃO"
+              placeholderTextColor="#C6C6C6"
+              value={numeroCartao}
+              onChangeText={formatarNumeroCartao}
+              keyboardType="numeric"
+              maxLength={19}
+            />
+
+            <TextInput
+              style={styles.input}
+              placeholder="NOME DO TITULAR"
+              placeholderTextColor="#C6C6C6"
+              value={titular}
+              onChangeText={setTitular}
+              autoCapitalize="characters"
+            />
+
+            <View style={styles.linhaCartao}>
+              <TextInput
+                style={[styles.input, styles.inputMetade]}
+                placeholder="VALIDADE"
+                placeholderTextColor="#C6C6C6"
+                value={validade}
+                onChangeText={formatarValidade}
+                keyboardType="numeric"
+                maxLength={5}
+              />
+
+              <TextInput
+                style={[styles.input, styles.inputMetade]}
+                placeholder="CVV"
+                placeholderTextColor="#C6C6C6"
+                value={cvv}
+                onChangeText={(texto) =>
+                  setCvv(texto.replace(/\D/g, '').slice(0, 4))
+                }
+                keyboardType="numeric"
+                secureTextEntry
+                maxLength={4}
+              />
+            </View>
+          </View>
+        )}
+
+        {/* PIX */}
+        <LinhaPagamento
+          tipo="pix"
+          titulo="PIX"
+          icone="qr-code-outline"
+        />
+
+        {metodo === 'pix' && (
+          <View style={styles.areaPix}>
+            <Ionicons
+              name="qr-code-outline"
+              size={145}
+              color="#111111"
+            />
+
+            <Text style={styles.textoPix}>
+              O QR Code de pagamento será disponibilizado
+              após a integração com o serviço de PIX.
+            </Text>
+          </View>
+        )}
+
+        {/* BOLETO */}
+        <LinhaPagamento
+          tipo="boleto"
+          titulo="BOLETO BANCÁRIO"
+          icone="document-text-outline"
+        />
+
+        {metodo === 'boleto' && (
+          <View style={styles.areaBoleto}>
+            <Ionicons
+              name="document-text-outline"
+              size={35}
+              color="#111111"
+            />
+
+            <Text style={styles.textoBoleto}>
+              O boleto bancário foi gerado e o download foi iniciado.
+            </Text>
+          </View>
+        )}
+
+        {/* PARCELAMENTO */}
+        <TouchableOpacity
+          style={styles.seletorParcelas}
+          onPress={() => setMostrarParcelas(!mostrarParcelas)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.textoParcelas}>
+            {parcelamento}x de {formatarPreco(total / parcelamento)} sem juros
           </Text>
 
-          {/* CARTÃO DE CRÉDITO */}
+          <Ionicons
+            name={mostrarParcelas ? 'chevron-up' : 'chevron-down'}
+            size={21}
+            color="#111111"
+          />
+        </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.opcao,
-              metodo === "cartao" && styles.opcaoAtiva,
-            ]}
-            onPress={() => {
-              setMetodo("cartao");
-              setNumeroCartao("");
-              setTitular("");
-              setValidade("");
-              setCvv("");
-            }}
-          >
-
-            <View style={styles.ladoEsquerdo}>
-
-              <View style={styles.radio}>
-                {metodo === "cartao" && (
-                  <View style={styles.radioDentro} />
-                )}
-              </View>
-
-              <Text style={styles.textoOpcao}>
-                CARTÃO DE CRÉDITO
-              </Text>
-
-            </View>
-
-            <Ionicons
-              name="card-outline"
-              size={22}
-              color="#111111"
-            />
-
-          </TouchableOpacity>
-
-          {/* CAMPOS DO CARTÃO */}
-
-          {metodo === "cartao" && (
-
-            <View style={styles.camposCartao}>
-
-              <TextInput
-                style={styles.input}
-                placeholder="NÚMERO DO CARTÃO"
-                placeholderTextColor="#BBBBBB"
-                value={numeroCartao}
-                onChangeText={setNumeroCartao}
-                keyboardType="numeric"
-                maxLength={19}
-              />
-
-              <TextInput
-                style={styles.input}
-                placeholder="NOME DO TITULAR"
-                placeholderTextColor="#BBBBBB"
-                value={titular}
-                onChangeText={setTitular}
-                autoCapitalize="characters"
-              />
-
-              <View style={styles.linhaCampos}>
-
-                <TextInput
-                  style={[styles.input, styles.validade]}
-                  placeholder="VALIDADE"
-                  placeholderTextColor="#BBBBBB"
-                  value={validade}
-                  onChangeText={setValidade}
-                  maxLength={5}
-                />
-
-                <TextInput
-                  style={[styles.input, styles.cvv]}
-                  placeholder="CVV"
-                  placeholderTextColor="#BBBBBB"
-                  value={cvv}
-                  onChangeText={setCvv}
-                  keyboardType="numeric"
-                  maxLength={4}
-                  secureTextEntry
-                />
-
-              </View>
-
-            </View>
-
-          )}
-
-          {/* PIX */}
-
-          <TouchableOpacity
-            style={[
-              styles.opcao,
-              metodo === "pix" && styles.opcaoAtiva,
-            ]}
-            onPress={() => {
-              setMetodo("pix");
-              setMostrarParcelas(false);
-            }}
-          >
-
-            <View style={styles.ladoEsquerdo}>
-
-              <View style={styles.radio}>
-                {metodo === "pix" && (
-                  <View style={styles.radioDentro} />
-                )}
-              </View>
-
-              <Text style={styles.textoOpcao}>PIX</Text>
-
-            </View>
-
-            <Ionicons
-              name="qr-code"
-              size={21}
-              color="#111111"
-            />
-
-          </TouchableOpacity>
-
-          {/* QR CODE */}
-
-          {metodo === "pix" && (
-
-            <View style={styles.containerQrPix}>
-
-              <View style={styles.qrCodeBox}>
-
-                <QRCode
-                  value="BELLAVER - PAGAMENTO DEMONSTRATIVO - NAO E UM PIX REAL"
-                  size={165}
-                  color="#000000"
-                  backgroundColor="#FFFFFF"
-                />
-
-              </View>
-
-              <Text style={styles.avisoMetodo}>
-                Escaneie o QR Code para visualizar as informações
-                demonstrativas do pagamento.
-              </Text>
-
-              <Text style={styles.valorPix}>
-                VALOR: R$ 994,00
-              </Text>
-
-            </View>
-
-          )}
-
-          {/* BOLETO */}
-
-          <TouchableOpacity
-            style={[
-              styles.opcao,
-              metodo === "boleto" && styles.opcaoAtiva,
-            ]}
-            onPress={gerarBoleto}
-            disabled={gerandoBoleto}
-          >
-
-            <View style={styles.ladoEsquerdo}>
-
-              <View style={styles.radio}>
-                {metodo === "boleto" && (
-                  <View style={styles.radioDentro} />
-                )}
-              </View>
-
-              <Text style={styles.textoOpcao}>
-                BOLETO BANCÁRIO
-              </Text>
-
-            </View>
-
-            {gerandoBoleto ? (
-              <Text style={styles.textoBaixando}>
-                GERANDO...
-              </Text>
-            ) : (
-              <Ionicons
-                name="download-outline"
-                size={22}
-                color="#111111"
-              />
-            )}
-
-          </TouchableOpacity>
-
-          {metodo === "boleto" && (
-
-            <View style={styles.avisoBoleto}>
-
-              <Ionicons
-                name="document-text-outline"
-                size={18}
-                color="#777777"
-              />
-
-              <Text style={styles.avisoMetodo}>
-                Documento PDF demonstrativo. Selecione o boleto
-                novamente para gerar outra cópia.
-              </Text>
-
-            </View>
-
-          )}
-
-          {/* PARCELAS */}
-
-          {metodo === "cartao" && (
-
-            <View>
-
+        {mostrarParcelas && (
+          <View style={styles.listaParcelas}>
+            {[1, 2, 3, 4, 5, 6].map((parcela) => (
               <TouchableOpacity
-                style={styles.seletorParcelas}
-                onPress={() =>
-                  setMostrarParcelas(!mostrarParcelas)
-                }
+                key={parcela}
+                style={styles.itemParcela}
+                onPress={() => {
+                  setParcelamento(parcela);
+                  setMostrarParcelas(false);
+                }}
               >
-
-                <Text style={styles.textoParcelas}>
-                  {parcelas}
+                <Text style={styles.textoItemParcela}>
+                  {parcela}x de {formatarPreco(total / parcela)} sem juros
                 </Text>
 
-                <Ionicons
-                  name={
-                    mostrarParcelas
-                      ? "chevron-up"
-                      : "chevron-down"
-                  }
-                  size={21}
-                  color="#111111"
-                />
-
+                {parcelamento === parcela && (
+                  <Ionicons
+                    name="checkmark"
+                    size={17}
+                    color="#111111"
+                  />
+                )}
               </TouchableOpacity>
-
-              {mostrarParcelas && (
-
-                <View style={styles.listaParcelas}>
-
-                  {opcoesParcelas.map((opcao) => (
-
-                    <TouchableOpacity
-                      key={opcao}
-                      style={styles.itemParcela}
-                      onPress={() => {
-                        setParcelas(opcao);
-                        setMostrarParcelas(false);
-                      }}
-                    >
-
-                      <Text style={styles.textoParcelas}>
-                        {opcao}
-                      </Text>
-
-                      {parcelas === opcao && (
-                        <Ionicons
-                          name="checkmark"
-                          size={17}
-                          color="#111111"
-                        />
-                      )}
-
-                    </TouchableOpacity>
-
-                  ))}
-
-                </View>
-
-              )}
-
-            </View>
-
-          )}
-
-          {/* SEGURANÇA */}
-
-          <View style={styles.seguranca}>
-
-            <Ionicons
-              name="lock-closed-outline"
-              size={13}
-              color="#BBBBBB"
-            />
-
-            <Text style={styles.textoSeguranca}>
-              Ambiente Seguro. Seus Dados Estão Protegidos.
-            </Text>
-
+            ))}
           </View>
+        )}
 
-          {/* FINALIZAR */}
+        {/* SEGURANÇA */}
+        <View style={styles.seguranca}>
+          <Ionicons
+            name="lock-closed-outline"
+            size={13}
+            color="#BDBDBD"
+          />
 
-          <TouchableOpacity
-            style={styles.botaoFinalizar}
-            onPress={finalizarPagamento}
-          >
+          <Text style={styles.textoSeguranca}>
+            Ambiente Seguro. Seus Dados Estão Protegidos.
+          </Text>
+        </View>
 
-            <Text style={styles.textoFinalizar}>
-              FINALIZAR PAGAMENTO
-            </Text>
+        {/* FINALIZAR */}
+        <TouchableOpacity
+          style={[
+            styles.botaoFinalizar,
+            (carregando || itens.length === 0 || finalizando) &&
+              styles.botaoDesativado,
+          ]}
+          onPress={finalizarPagamento}
+          disabled={carregando || itens.length === 0 || finalizando}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.textoFinalizar}>
+            PAGAMENTO FINALIZADO
+          </Text>
+        </TouchableOpacity>
 
-          </TouchableOpacity>
-
-          <View style={styles.espacoFinal} />
-
-        </ScrollView>
-
-      </View>
-    </SafeAreaView>
+      </ScrollView>
+    </View>
   );
 }
 
-// ESTILIZAÇÃO
-
 const styles = StyleSheet.create({
-
-  tela: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-
   container: {
     flex: 1,
-    width: "100%",
-    maxWidth: 480,
-    alignSelf: "center",
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#222222",
+    backgroundColor: '#FFFFFF',
+  },
+
+  conteudo: {
+    paddingHorizontal: 24,
+    paddingBottom: 35,
   },
 
   cabecalho: {
-    height: 111,
-    marginHorizontal: 13,
-    borderBottomWidth: 1,
-    borderBottomColor: "#AAAAAA",
-    alignItems: "center",
-    justifyContent: "center",
+    height: 110,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
 
-  menu: {
-    position: "absolute",
-    right: 2,
-    top: 28,
+  espaco: {
+    width: 28,
+  },
+
+  logoContainer: {
+    alignItems: 'center',
   },
 
   logo: {
     fontSize: 29,
-    fontWeight: "300",
-    letterSpacing: 6,
-    color: "#080808",
-    marginTop: 10,
+    fontWeight: '300',
+    letterSpacing: 7,
+    color: '#111111',
   },
 
-  ano: {
+  subLogo: {
     fontSize: 11,
-    color: "#111111",
-    marginTop: 5,
+    color: '#111111',
+    marginTop: 7,
   },
 
-  conteudo: {
-    flex: 1,
-    paddingHorizontal: 17,
+  menu: {
+    width: 28,
+    height: 35,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  divisoriaTopo: {
+    height: 2,
+    backgroundColor: '#BDBDBD',
+    marginHorizontal: -13,
   },
 
   voltar: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 9,
+    marginBottom: 24,
     gap: 5,
-    marginTop: 12,
-    marginBottom: 15,
   },
 
   textoVoltar: {
     fontSize: 9,
-    color: "#777777",
+    color: '#777777',
+  },
+
+  tituloArea: {
+    marginBottom: 13,
   },
 
   titulo: {
     fontSize: 12,
-    fontWeight: "700",
-    color: "#111111",
+    fontWeight: '700',
+    color: '#111111',
   },
 
   subtitulo: {
     fontSize: 9,
-    color: "#777777",
-    marginTop: 4,
-    marginBottom: 9,
+    color: '#777777',
+    marginTop: 3,
   },
 
-  caixaProdutos: {
+  cardProdutos: {
     borderWidth: 1,
-    borderColor: "#D5D5D5",
+    borderColor: '#D2D2D2',
     borderRadius: 3,
-    padding: 12,
+    padding: 11,
+    marginBottom: 18,
+    minHeight: 85,
+    justifyContent: 'center',
+  },
+
+  sacolaVazia: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: '#777777',
+    padding: 20,
   },
 
   produto: {
-    flexDirection: "row",
-    minHeight: 101,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 11,
   },
 
-  fotoProduto: {
+  imagemProduto: {
     width: 87,
-    height: 91,
-    backgroundColor: "#F0F0F0",
+    height: 90,
+    backgroundColor: '#EEEEEE',
   },
 
-  detalhesProduto: {
+  imagemSemFoto: {
+    width: 87,
+    height: 90,
+    backgroundColor: '#EEEEEE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  infoProduto: {
     flex: 1,
-    paddingLeft: 7,
+    marginLeft: 8,
     paddingTop: 5,
   },
 
   nomeProduto: {
-    fontSize: 11,
-    color: "#111111",
-    lineHeight: 15,
+    fontSize: 12,
+    color: '#111111',
+    lineHeight: 16,
   },
 
-  infoProduto: {
+  detalheProduto: {
     fontSize: 11,
-    color: "#888888",
+    color: '#777777',
     marginTop: 2,
   },
 
+  precoProduto: {
+    fontSize: 11,
+    color: '#111111',
+    marginTop: 5,
+    fontWeight: '600',
+  },
+
   resumo: {
-    backgroundColor: "#F4F4F4",
+    backgroundColor: '#F4F4F4',
     borderRadius: 3,
     paddingHorizontal: 9,
-    paddingVertical: 7,
-    marginTop: 15,
+    paddingTop: 9,
+    marginBottom: 15,
   },
 
   linhaResumo: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    minHeight: 26,
+    height: 27,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
 
   textoResumo: {
     fontSize: 11,
-    color: "#777777",
+    color: '#777777',
   },
 
-  total: {
+  linhaTotal: {
+    height: 29,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E5',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  textoTotal: {
     fontSize: 11,
-    color: "#111111",
-    fontWeight: "600",
+    color: '#111111',
+    fontWeight: '600',
   },
 
-  rotuloMetodo: {
+  tituloMetodo: {
     fontSize: 9,
-    color: "#777777",
-    marginTop: 16,
+    color: '#777777',
     marginBottom: 8,
   },
 
-  opcao: {
-    minHeight: 31,
+  opcaoPagamento: {
+    height: 31,
     borderWidth: 1,
-    borderColor: "#D5D5D5",
+    borderColor: '#D2D2D2',
     borderRadius: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
     marginBottom: 8,
-    paddingHorizontal: 9,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
   },
 
-  opcaoAtiva: {
-    borderColor: "#111111",
+  opcaoSelecionada: {
+    borderColor: '#111111',
   },
 
-  ladoEsquerdo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 15,
+  ladoOpcao: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
   radio: {
-    width: 16,
-    height: 16,
+    width: 13,
+    height: 13,
+    borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: "#111111",
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
+    borderColor: '#111111',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
   },
 
-  radioDentro: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-    backgroundColor: "#111111",
+  radioInterno: {
+    width: 7,
+    height: 7,
+    borderRadius: 10,
+    backgroundColor: '#111111',
   },
 
   textoOpcao: {
     fontSize: 9,
-    color: "#111111",
+    color: '#111111',
   },
 
   camposCartao: {
-    gap: 20,
-    marginBottom: 10,
+    marginBottom: 7,
   },
 
   input: {
-    height: 30,
+    height: 31,
     borderWidth: 1,
-    borderColor: "#D5D5D5",
+    borderColor: '#D2D2D2',
     borderRadius: 3,
-    paddingHorizontal: 12,
+    paddingHorizontal: 13,
     fontSize: 9,
-    color: "#111111",
+    color: '#111111',
+    marginBottom: 19,
+    backgroundColor: '#FFFFFF',
   },
 
-  linhaCampos: {
-    flexDirection: "row",
+  linhaCartao: {
+    flexDirection: 'row',
     gap: 7,
   },
 
-  validade: {
+  inputMetade: {
     flex: 1,
-  },
-
-  cvv: {
-    flex: 1,
-  },
-
-  containerQrPix: {
-    marginTop: 8,
-    marginBottom: 12,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#D5D5D5",
-    borderRadius: 3,
-    padding: 12,
-  },
-
-  qrCodeBox: {
-    width: 185,
-    height: 185,
-    borderWidth: 1,
-    borderColor: "#EEEEEE",
-    backgroundColor: "#FFFFFF",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  avisoMetodo: {
-    fontSize: 10,
-    color: "#777777",
-    lineHeight: 17,
-    marginTop: 8,
-    marginBottom: 5,
-    paddingHorizontal: 3,
-    textAlign: "center",
-  },
-
-  valorPix: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#111111",
-    marginTop: 5,
-  },
-
-  avisoBoleto: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
     marginBottom: 10,
   },
 
-  textoBaixando: {
-    fontSize: 9,
-    color: "#777777",
+  areaPix: {
+    minHeight: 183,
+    borderWidth: 1,
+    borderColor: '#D2D2D2',
+    borderRadius: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 15,
+    marginBottom: 8,
+  },
+
+  textoPix: {
+    fontSize: 10,
+    color: '#777777',
+    textAlign: 'center',
+    marginTop: 10,
+    lineHeight: 15,
+  },
+
+  areaBoleto: {
+    borderWidth: 1,
+    borderColor: '#D2D2D2',
+    borderRadius: 3,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+
+  textoBoleto: {
+    fontSize: 10,
+    color: '#777777',
+    lineHeight: 16,
+    textAlign: 'center',
+    marginTop: 9,
   },
 
   seletorParcelas: {
     height: 31,
     borderWidth: 1,
-    borderColor: "#D5D5D5",
+    borderColor: '#D2D2D2',
     borderRadius: 3,
-    paddingHorizontal: 9,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 11,
   },
 
   textoParcelas: {
-    fontSize: 12,
-    color: "#111111",
+    fontSize: 11,
+    color: '#111111',
   },
 
   listaParcelas: {
     borderWidth: 1,
-    borderColor: "#DDDDDD",
+    borderColor: '#D2D2D2',
+    borderRadius: 3,
     marginTop: 3,
-    paddingHorizontal: 10,
+    marginBottom: 5,
   },
 
   itemParcela: {
-    minHeight: 35,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    minHeight: 34,
+    paddingHorizontal: 11,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: "#EEEEEE",
+    borderBottomColor: '#EEEEEE',
+  },
+
+  textoItemParcela: {
+    fontSize: 11,
+    color: '#111111',
   },
 
   seguranca: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 5,
-    marginTop: 17,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
     marginBottom: 24,
+    gap: 5,
   },
 
   textoSeguranca: {
     fontSize: 9,
-    color: "#AAAAAA",
+    color: '#B8B8B8',
   },
 
   botaoFinalizar: {
-    height: 30,
-    backgroundColor: "#000000",
+    height: 34,
+    backgroundColor: '#000000',
     borderRadius: 3,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 1,
+  },
+
+  botaoDesativado: {
+    opacity: 0.4,
   },
 
   textoFinalizar: {
     fontSize: 10,
-    color: "#FFFFFF",
-    fontWeight: "500",
+    color: '#FFFFFF',
+    fontWeight: '400',
   },
-
-  espacoFinal: {
-    height: 30,
-  },
-
 });

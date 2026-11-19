@@ -15,6 +15,10 @@ import {
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { listarProdutosCadastrados } from '../data/produtosCadastrados';
+import {
+  consumirFiltrosPesquisa,
+  FiltrosPesquisa,
+} from '../data/filtrosPesquisa';
 import { useFavoritos } from '../hooks/useFavoritos';
 
 const produtos = [
@@ -96,6 +100,8 @@ type ProdutoPesquisa = {
   preco: string;
   imagem: ImageSourcePropType;
   cadastrado: boolean;
+  categoria?: string;
+  tamanhos?: string[];
 };
 
 function normalizarTexto(texto: string): string {
@@ -106,6 +112,59 @@ function normalizarTexto(texto: string): string {
     .trim();
 }
 
+function converterPreco(texto: string): number {
+  const valor = Number(
+    texto.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')
+  );
+  return Number.isFinite(valor) ? valor : 0;
+}
+
+function correspondeCategoria(
+  produto: ProdutoPesquisa,
+  categoria: string
+): boolean {
+  const nome = normalizarTexto(produto.nome);
+  const termosPorCategoria: Record<string, string[]> = {
+    Feminino: ['vestido', 'gown', 'blusa', 'saia', 'mini', 'body', 'bota'],
+    Masculino: ['casaco', 'coat', 'trench', 'blazer', 'jaqueta', 'camisa', 'terno'],
+    'Calçados': ['calcado', 'bota', 'sapato', 'sandalia', 'shoe', 'pump'],
+    Acessórios: ['bolsa', 'bag', 'anel', 'joia', 'relogio', 'brinco'],
+  };
+
+  if (categoria === 'Feminino' && produto.categoria === 'feminino') {
+    return true;
+  }
+
+  if (categoria === 'Masculino' && produto.categoria === 'masculino') {
+    return true;
+  }
+
+  if (categoria === 'Calçados' && produto.categoria === 'calcados') {
+    return true;
+  }
+
+  if (categoria === 'Acessórios' && produto.categoria === 'acessorios') {
+    return true;
+  }
+
+  return (termosPorCategoria[categoria] ?? []).some((termo) =>
+    nome.includes(termo)
+  );
+}
+
+function correspondeFaixaDePreco(preco: number, faixa: number): boolean {
+  const limites = [125, 250, 375, 500];
+  if (faixa === 4) {
+    return preco >= limites[3];
+  }
+
+  const limiteInferior = faixa === 0 ? 0 : limites[faixa - 1];
+  return (
+    (faixa === 0 ? preco >= limiteInferior : preco > limiteInferior) &&
+    preco <= limites[faixa]
+  );
+}
+
 export default function Pesquisa() {
   const [pesquisa, setPesquisa] = useState('');
   const [recentes, setRecentes] = useState(pesquisasIniciais);
@@ -114,6 +173,8 @@ export default function Pesquisa() {
   const [produtosCadastrados, setProdutosCadastrados] = useState<
     Awaited<ReturnType<typeof listarProdutosCadastrados>>
   >([]);
+  const [filtrosAtivos, setFiltrosAtivos] =
+    useState<FiltrosPesquisa | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -141,6 +202,33 @@ export default function Pesquisa() {
     }, [])
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      let ativo = true;
+
+      consumirFiltrosPesquisa()
+        .then((filtros) => {
+          if (ativo) {
+            setFiltrosAtivos(filtros);
+          }
+        })
+        .catch((erro: unknown) => {
+          console.error('Erro ao carregar filtros de pesquisa:', erro);
+          if (ativo) {
+            setFiltrosAtivos(null);
+            Alert.alert(
+              'Erro ao carregar filtros',
+              'Não foi possível aplicar os filtros salvos.'
+            );
+          }
+        });
+
+      return () => {
+        ativo = false;
+      };
+    }, [])
+  );
+
   const todosProdutos: ProdutoPesquisa[] = [
     ...produtos.map((produto) => ({
       ...produto,
@@ -153,15 +241,44 @@ export default function Pesquisa() {
       preco: `R$ ${produto.precoDesconto.replace(/^R\$\s*/i, '').trim()}`,
       imagem: { uri: produto.imagens[0] },
       cadastrado: true,
+      categoria: produto.categoria,
+      tamanhos: produto.tamanhos,
     })),
   ];
 
   const termoPesquisa = normalizarTexto(pesquisa);
-  const resultados = termoPesquisa
+  const baseResultados = termoPesquisa
     ? todosProdutos.filter((produto) =>
         normalizarTexto(produto.nome).includes(termoPesquisa)
       )
-    : todosProdutos.slice(0, 3);
+    : filtrosAtivos
+      ? todosProdutos
+      : todosProdutos.slice(0, 3);
+  const resultados = filtrosAtivos
+    ? baseResultados.filter((produto) => {
+        if (
+          filtrosAtivos.tamanho &&
+          !produto.tamanhos?.includes(filtrosAtivos.tamanho)
+        ) {
+          return false;
+        }
+
+        if (
+          filtrosAtivos.categoria !== 'Todas as Categorias' &&
+          !correspondeCategoria(produto, filtrosAtivos.categoria)
+        ) {
+          return false;
+        }
+
+        return (
+          filtrosAtivos.preco === null ||
+          correspondeFaixaDePreco(
+            converterPreco(produto.preco),
+            filtrosAtivos.preco
+          )
+        );
+      })
+    : baseResultados;
 
   function pesquisar(texto?: string) {
     const termo = (texto || pesquisa).trim();
@@ -182,7 +299,15 @@ export default function Pesquisa() {
   }
 
   function abrirFiltros() {
-    router.push('/filtroPesquisa');
+    router.push({
+      pathname: '/filtroPesquisa',
+      params: {
+        origem: 'pesquisa',
+        tamanho: filtrosAtivos?.tamanho ?? '',
+        preco: filtrosAtivos?.preco?.toString() ?? '',
+        categoria: filtrosAtivos?.categoria ?? '',
+      },
+    });
   }
 
   function limparHistorico() {

@@ -25,14 +25,11 @@ export default function RecuperarSenhaScreen() {
   const [carregando, setCarregando] = useState(false);
 
   function voltar() {
-<<<<<<< HEAD
     if (router.canGoBack()) {
       router.back();
       return;
     }
 
-=======
->>>>>>> ae118774e7ed6765a45eefb40fd077d8a800667e
     router.replace(
       origem === 'perfil'
         ? '/telaperfil'

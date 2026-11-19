@@ -129,7 +129,12 @@ export default function Catalogo() {
 
             <Text style={styles.logo}>BELLAVER</Text>
             <Text style={styles.ano}>EST. 1972</Text>
-            <TouchableOpacity style={styles.menu}>
+            <TouchableOpacity
+              style={styles.menu}
+              onPress={() => router.push('/menu')}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir menu"
+            >
               <Ionicons name="menu-outline" size={27} color="#111111" />
             </TouchableOpacity>
           </View>

@@ -1,4 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { signOut } from 'firebase/auth';
+import { auth } from '../firebaseConfig';
 
 export const ADMIN_EMAIL = 'adminbellaver@gmail.com';
 export const USER_ROLE_KEY = '@bellaver:user-role';
@@ -21,4 +23,9 @@ export async function getUserRole(): Promise<UserRole | null> {
 
 export async function clearUserRole() {
   await AsyncStorage.removeItem(USER_ROLE_KEY);
+}
+
+export async function encerrarSessao() {
+  await signOut(auth);
+  await clearUserRole();
 }

@@ -1,18 +1,18 @@
 
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  StyleSheet,
-  SafeAreaView,
-} from "react-native";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
+import { useEffect, useRef, useState } from "react";
+import {
+    Image,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
 
 const categorias = [
   "Vestido",
@@ -73,6 +73,16 @@ export default function Doar() {
   const [filtroAberto, setFiltroAberto] = useState("");
   const [mensagem, setMensagem] = useState("");
   const [sucesso, setSucesso] = useState(false);
+  const navegacaoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (navegacaoTimer.current) {
+        clearTimeout(navegacaoTimer.current);
+      }
+    },
+    []
+  );
 
   async function adicionarFotos() {
     const permissao =
@@ -132,6 +142,9 @@ export default function Doar() {
 
     setMensagem("Produto cadastrado com sucesso para doação à BELLAHOPE!");
     setSucesso(true);
+    navegacaoTimer.current = setTimeout(() => {
+      router.replace("/homeBellahope");
+    }, 2000);
   }
 
   function abrirFiltro(

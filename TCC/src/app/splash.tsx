@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -20,10 +20,10 @@ const telas = [
 
 export default function SplashScreen() {
   const [telaAtual, setTelaAtual] = useState(0);
-  const opacidade = useRef(new Animated.Value(1)).current;
+  const [opacidade] = useState(() => new Animated.Value(1));
   const transicionando = useRef(false);
 
-  function trocarTela() {
+  const trocarTela = useCallback(() => {
     if (transicionando.current) {
       return;
     }
@@ -49,7 +49,7 @@ export default function SplashScreen() {
         router.replace('/login');
       }
     });
-  }
+  }, [opacidade, telaAtual]);
 
   function pular() {
     if (transicionando.current) {
@@ -73,7 +73,7 @@ export default function SplashScreen() {
     }, 6000);
 
     return () => clearTimeout(intervalo);
-  }, [telaAtual]);
+  }, [telaAtual, trocarTela]);
 
   return (
     <View style={styles.container}>

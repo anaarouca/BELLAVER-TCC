@@ -1,5 +1,4 @@
-
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -20,6 +19,7 @@ import {
   listarProdutosCadastrados,
   ProdutoCadastrado,
 } from '../data/produtosCadastrados';
+import { useSacola } from '../hooks/useSacola';
 
 type ProdutoFavorito = {
   id: string;
@@ -191,13 +191,27 @@ export default function FavoritosScreen() {
   const { width } = useWindowDimensions();
   const { favoritos, alternarFavorito } = useFavoritos();
 
-  const [itensSacola, setItensSacola] = useState(2);
   const [produtosCadastrados, setProdutosCadastrados] = useState<
     ProdutoCadastrado[]
   >([]);
 
+
+  useEffect(() => {
+  console.log('IDS DOS FAVORITOS:', favoritos);
+  console.log(
+    'IDS DOS PRODUTOS CADASTRADOS:',
+    produtosCadastrados.map((produto) => produto.id)
+  );
+}, [favoritos, produtosCadastrados]);
+
+
+
+
+
+  const { itens: itensSacola } = useSacola();
+
   const isDesktop = width >= 768;
-  const produtos = [
+  const produtosDoCatalogo = [
     ...produtosDisponiveis,
     ...produtosCadastrados.map((produto) => ({
       id: produto.id,
@@ -207,14 +221,42 @@ export default function FavoritosScreen() {
       imagem: { uri: produto.imagens[0] },
       cadastrado: true,
     })),
-  ].filter((produto) => favoritos.includes(produto.id));
+  ];
+
+  const produtosDaSacola = itensSacola.map((item) => ({
+    id: item.produtoId,
+    nome: item.nome,
+    precoOriginal:
+      item.precoAntigo === undefined
+        ? `R$ ${item.preco.toFixed(2).replace('.', ',')}`
+        : `R$ ${item.precoAntigo.toFixed(2).replace('.', ',')}`,
+    preco: `R$ ${item.preco.toFixed(2).replace('.', ',')}`,
+    imagem: { uri: item.imagem },
+    cadastrado: true,
+  }));
+
+  const produtos = Array.from(
+    new Map(
+      [...produtosDoCatalogo, ...produtosDaSacola].map((produto) => [
+        produto.id,
+        produto,
+      ])
+    ).values()
+  ).filter((produto) => favoritos.includes(produto.id));
 
   function adicionarSacola(produto: (typeof produtos)[number]) {
-    setItensSacola((quantidade) => quantidade + 1);
-    Alert.alert(
-      'Produto adicionado',
-      `${produto.nome} foi adicionado à sua sacola.`
-    );
+    if (!produto.cadastrado) {
+      Alert.alert(
+        'Produto indisponível',
+        'Este item demonstrativo não está cadastrado no catálogo e não pode ser comprado.'
+      );
+      return;
+    }
+
+    router.push({
+      pathname: '/produto2',
+      params: { id: produto.id },
+    });
   }
 
   useFocusEffect(
@@ -325,7 +367,7 @@ export default function FavoritosScreen() {
               onPress={() => router.push('/sacola')}
             >
               <Text style={styles.textoAba}>
-                SACOLA ({itensSacola})
+                SACOLA ({itensSacola.reduce((total, item) => total + item.quantidade, 0)})
               </Text>
             </TouchableOpacity>
 

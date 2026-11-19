@@ -1,66 +1,33 @@
 
+import { Ionicons } from '@expo/vector-icons';
+import { router, useFocusEffect } from 'expo-router';
 import {
-  View,
-  Text,
+  useCallback,
+  useState,
+} from 'react';
+import {
+  Alert,
   Image,
   ScrollView,
-  TouchableOpacity,
-  StyleSheet,
   StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
   useWindowDimensions,
+  View,
 } from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getUserRole } from '../auth/session';
+import { listarProdutosCadastrados } from '../data/produtosCadastrados';
 import { useFavoritos } from '../hooks/useFavoritos';
 
-const novidades = [
-  {
-    id: '3',
-    nome: 'Gown Saint Tropez Branco',
-    original: 'R$ 1.280,00',
-    preco: 'R$ 897,00',
-    imagem: require('../../assets/Img/GownSaint.png'),
-  },
-  {
-    id: '1',
-    nome: 'Blusa em organza Branco',
-    original: 'R$ 760,00',
-    preco: 'R$ 760,00',
-    imagem: require('../../assets/Img/BlusaEmOrganza.png'),
-  },
-  {
-    id: '2',
-    nome: 'Set Denim Grand Icon Azul',
-    original: 'R$ 1.197,00',
-    preco: 'R$ 1.197,00',
-    imagem: require('../../assets/Img/SetDenimGrand.png'),
-  },
-];
-
-const maisVendidos = [
-  {
-    id: '5',
-    nome: 'Vestido Longo Azul-Marinho',
-    original: 'R$ 1.490,00',
-    preco: 'R$ 897,00',
-    imagem: require('../../assets/Img/VestidoLongoAzul.png'),
-  },
-  {
-    id: '6',
-    nome: 'Conjunto Social Preto & Branco',
-    original: 'R$ 890,00',
-    preco: 'R$ 597,00',
-    imagem: require('../../assets/Img/ConjuntoSocialPreto.png'),
-  },
-  {
-    id: '4',
-    nome: 'Trench Coat Alfaiataria Preto',
-    original: 'R$ 4.290,00',
-    preco: 'R$ 3.200,00',
-    imagem: require('../../assets/Img/TrenchCoatAlfaiataria.png'),
-  },
-];
+type ProdutoHome = {
+  id: string;
+  nome: string;
+  original: string;
+  preco: string;
+  imagem?: { uri: string };
+};
 
 const categorias = [
   {
@@ -85,6 +52,54 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { favoritos, alternarFavorito } = useFavoritos();
+  const [produtos, setProdutos] = useState<ProdutoHome[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      let ativo = true;
+
+      getUserRole()
+        .then((role) => {
+          if (ativo) {
+            setIsAdmin(role === 'admin');
+          }
+        })
+        .catch((erro: unknown) => {
+          console.error('Erro ao verificar perfil na home:', erro);
+        });
+
+      listarProdutosCadastrados()
+        .then((produtosCadastrados) => {
+          if (ativo) {
+            setProdutos(
+              produtosCadastrados.slice(0, 6).map((produto) => ({
+                id: produto.id,
+                nome: produto.nome,
+                original: `R$ ${produto.precoOriginal.replace(/^R\$\s*/i, '').trim()}`,
+                preco: `R$ ${produto.precoDesconto.replace(/^R\$\s*/i, '').trim()}`,
+                imagem: produto.imagens[0]
+                  ? { uri: produto.imagens[0] }
+                  : undefined,
+              }))
+            );
+          }
+        })
+        .catch((erro: unknown) => {
+          console.error('Erro ao carregar produtos da home:', erro);
+          Alert.alert(
+            'Erro ao carregar produtos',
+            erro instanceof Error
+              ? erro.message
+              : 'Não foi possível carregar os produtos cadastrados.'
+          );
+        });
+
+      return () => {
+        ativo = false;
+      };
+    }, [])
+  );
 
   const isDesktop = width >= 768;
   const margem = isDesktop ? 38 : 18;
@@ -94,10 +109,7 @@ export default function HomeScreen() {
     router.push('/catalogo');
   }
 
-  function renderProdutos(
-    titulo: string,
-    produtos: typeof novidades
-  ) {
+  function renderProdutos(titulo: string, produtos: ProdutoHome[]) {
     return (
       <View
         style={[
@@ -142,19 +154,26 @@ export default function HomeScreen() {
               key={produto.id}
             >
               <TouchableOpacity
-                onPress={abrirCatalogo}
+                onPress={() =>
+                  router.push({
+                    pathname: '/produto2',
+                    params: { id: produto.id },
+                  })
+                }
                 style={styles.areaImagem}
               >
-                <Image
-                  source={produto.imagem}
-                  style={[
-                    styles.imagemProduto,
-                    {
-                      filter: 'grayscale(100%)',
-                    } as any,
-                  ]}
-                  resizeMode="cover"
-                />
+                {produto.imagem && (
+                  <Image
+                    source={produto.imagem}
+                    style={[
+                      styles.imagemProduto,
+                      {
+                        filter: 'grayscale(100%)',
+                      } as any,
+                    ]}
+                    resizeMode="cover"
+                  />
+                )}
               </TouchableOpacity>
 
               <View style={styles.linhaNome}>
@@ -225,7 +244,18 @@ export default function HomeScreen() {
               { height: isDesktop ? 120 : 100 },
             ]}
           >
-            <View style={styles.espacoLateral} />
+            {isAdmin ? (
+              <TouchableOpacity
+                style={styles.botaoAdicionar}
+                onPress={() => router.push('/cadProduto')}
+                accessibilityRole="button"
+                accessibilityLabel="Adicionar produto"
+              >
+                <Ionicons name="add" size={29} color="#111111" />
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.espacoLateral} />
+            )}
 
             <View style={styles.marca}>
               <Text
@@ -325,8 +355,7 @@ export default function HomeScreen() {
             ]}
           />
 
-          {renderProdutos('Novidades', novidades)}
-          {renderProdutos('Mais vendidos', maisVendidos)}
+          {renderProdutos('Novidades', produtos)}
 
           <View
             style={[
@@ -367,7 +396,11 @@ export default function HomeScreen() {
                     router.push(
                       categoria.nome === 'Masculino'
                         ? '/catalogoMasculino'
-                        : '/catalogo'
+                        : categoria.nome === 'Calçados'
+                          ? '/catalogoCalcados'
+                          : categoria.nome === 'Acessórios'
+                            ? '/catalogoacessorios'
+                            : '/catalogo'
                     )
                   }
                 >
@@ -426,6 +459,13 @@ const styles = StyleSheet.create({
   },
   espacoLateral: {
     width: 28,
+  },
+
+  botaoAdicionar: {
+    width: 28,
+    height: 35,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   marca: {
     alignItems: 'center',

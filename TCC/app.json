@@ -13,7 +13,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
-        "foregroundImage": "./assets/Img/logoSemFundo.png"
+        "foregroundImage": "./assets/Img/adaptive-icon.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.anaarouca.Bellaver"
@@ -24,6 +24,7 @@
     },
     "plugins": [
       "expo-router",
+      "react-native-maps",
       [
         "expo-splash-screen",
         {
@@ -32,8 +33,7 @@
           "imageWidth": 76
         }
       ],
-      "expo-web-browser",
-      "expo-sharing"
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

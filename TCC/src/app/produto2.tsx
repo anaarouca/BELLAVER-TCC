@@ -26,11 +26,13 @@ import {
 } from '../data/produtosCadastrados';
 import { getUserRole } from '../auth/session';
 import { useFavoritos } from '../hooks/useFavoritos';
+import { useSacola } from '../hooks/useSacola';
 
 export default function ProdutoCadastradoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [produto, setProduto] = useState<ProdutoCadastrado | null>(null);
-  const [carregando, setCarregando] = useState(true);
+  const [idCarregado, setIdCarregado] = useState<string | null>(null);
+  const carregando = Boolean(id) && idCarregado !== id;
   const [erroCarregamento, setErroCarregamento] = useState(false);
   const [imagemAtual, setImagemAtual] = useState(0);
   const [imagemComErro, setImagemComErro] = useState(false);
@@ -40,6 +42,8 @@ export default function ProdutoCadastradoScreen() {
   const [tamanhoSelecionado, setTamanhoSelecionado] = useState('');
   const [quantidade, setQuantidade] = useState('1');
   const { favoritos, alternarFavorito } = useFavoritos();
+  const { adicionarProduto } = useSacola();
+  const [adicionandoSacola, setAdicionandoSacola] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [modoEdicao, setModoEdicao] = useState(false);
   const [produtoEditando, setProdutoEditando] = useState<ProdutoCadastrado | null>(null);
@@ -57,7 +61,6 @@ export default function ProdutoCadastradoScreen() {
     verificarPermissao();
 
     if (!id) {
-      setCarregando(false);
       return;
     }
 
@@ -90,7 +93,7 @@ export default function ProdutoCadastradoScreen() {
       })
       .finally(() => {
         if (ativo) {
-          setCarregando(false);
+          setIdCarregado(id);
         }
       });
 
@@ -384,21 +387,43 @@ export default function ProdutoCadastradoScreen() {
     return true;
   }
 
-  function adicionarSacola() {
-    if (validarCompra()) {
-      Alert.alert(
-        'Produto adicionado!',
-        `${produtoAtual.nome}${tamanhoSelecionado ? `\nTamanho: ${tamanhoSelecionado}` : ''}\nQuantidade: ${quantidade}`
-      );
+  async function adicionarSacola(comprarAgora = false) {
+    if (!validarCompra() || adicionandoSacola) {
+      return;
     }
-  }
 
-  function comprarAgora() {
-    if (validarCompra()) {
-      Alert.alert(
-        'Comprar agora',
-        `Produto: ${produtoAtual.nome}${tamanhoSelecionado ? `\nTamanho: ${tamanhoSelecionado}` : ''}\nQuantidade: ${quantidade}`
+    try {
+      setAdicionandoSacola(true);
+      await adicionarProduto(
+        produtoAtual.id,
+        tamanhoSelecionado,
+        Number(quantidade),
+        {
+          nome: produtoAtual.nome,
+          preco: produtoAtual.precoDesconto,
+          precoAntigo: produtoAtual.precoOriginal,
+          imagem: produtoAtual.imagens[0] ?? '',
+          estoque: produtoAtual.estoque,
+        }
       );
+
+      if (comprarAgora) {
+        router.push('/sacola');
+      } else {
+        router.push({
+          pathname: '/mensagem1',
+          params: { nome: produtoAtual.nome },
+        });
+      }
+    } catch (erro: unknown) {
+      Alert.alert(
+        'Não foi possível adicionar',
+        erro instanceof Error
+          ? erro.message
+          : 'Tente novamente em alguns instantes.'
+      );
+    } finally {
+      setAdicionandoSacola(false);
     }
   }
 
@@ -420,9 +445,6 @@ export default function ProdutoCadastradoScreen() {
     }
   }
 
-<<<<<<< HEAD
-  const ehAcessorio = produto.categoria === 'acessorios';
-=======
   const nomeNormalizado = produto.nome
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -430,7 +452,6 @@ export default function ProdutoCadastradoScreen() {
   const ehAcessorio =
     produto.categoria === 'acessorios' ||
     /\b(?:anel|aneis)\b/.test(nomeNormalizado);
->>>>>>> ae118774e7ed6765a45eefb40fd077d8a800667e
   const seletorTamanho =
     tamanhosDisponiveis.length > 0 ? (
       <View
@@ -496,7 +517,24 @@ export default function ProdutoCadastradoScreen() {
         contentContainerStyle={styles.conteudo}
       >
         <View style={styles.cabecalho}>
-          <TouchableOpacity onPress={() => router.replace('/catalogo')}>
+          <TouchableOpacity
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+                return;
+              }
+
+              const rotaCatalogo =
+                produto.categoria === 'masculino'
+                  ? '/catalogoMasculino'
+                  : produto.categoria === 'acessorios'
+                    ? '/catalogoacessorios'
+                    : produto.categoria === 'calcados'
+                      ? '/catalogoCalcados'
+                      : '/catalogo';
+              router.replace(rotaCatalogo);
+            }}
+          >
             <Text style={styles.voltar}>‹ Voltar</Text>
           </TouchableOpacity>
           <Text style={styles.logo}>BELLAVER</Text>
@@ -725,24 +763,30 @@ export default function ProdutoCadastradoScreen() {
           <TouchableOpacity
             style={[
               styles.botaoPrincipal,
-              produto.estoque === 0 && styles.botaoDesabilitado,
+              (produto.estoque === 0 || adicionandoSacola) &&
+                styles.botaoDesabilitado,
             ]}
-            onPress={adicionarSacola}
-            disabled={produto.estoque === 0}
+            onPress={() => adicionarSacola()}
+            disabled={produto.estoque === 0 || adicionandoSacola}
             activeOpacity={0.8}
           >
-            <Text style={styles.textoBotao}>Adicionar à Sacola</Text>
+            <Text style={styles.textoBotao}>
+              {adicionandoSacola ? 'Salvando...' : 'Adicionar à Sacola'}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[
               styles.botaoPrincipal,
-              produto.estoque === 0 && styles.botaoDesabilitado,
+              (produto.estoque === 0 || adicionandoSacola) &&
+                styles.botaoDesabilitado,
             ]}
-            onPress={comprarAgora}
-            disabled={produto.estoque === 0}
+            onPress={() => adicionarSacola(true)}
+            disabled={produto.estoque === 0 || adicionandoSacola}
             activeOpacity={0.8}
           >
-            <Text style={styles.textoBotao}>Comprar já</Text>
+            <Text style={styles.textoBotao}>
+              {adicionandoSacola ? 'Salvando...' : 'Comprar já'}
+            </Text>
           </TouchableOpacity>
 
           <Text style={styles.tituloSecao}>Descrição</Text>
@@ -1163,18 +1207,11 @@ const styles = StyleSheet.create({
   },
   opcoesAcessorios: {
     width: '100%',
-<<<<<<< HEAD
     flexDirection: 'column',
     alignItems: 'flex-start',
-=======
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    marginTop: 8,
   },
   areaTamanhos: {
     flex: 1,
->>>>>>> ae118774e7ed6765a45eefb40fd077d8a800667e
   },
   areaTamanhosAcessorios: {
     flex: 1,
@@ -1184,19 +1221,10 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   areaQuantidadeAcessorios: {
-<<<<<<< HEAD
     width: '100%',
     alignItems: 'flex-start',
     marginLeft: 0,
-    marginTop: 0,
-    alignItems: 'center',
-    marginLeft: 12,
-  },
-  areaQuantidadeAcessorios: {
-=======
->>>>>>> ae118774e7ed6765a45eefb40fd077d8a800667e
-    alignItems: 'flex-end',
-    marginLeft: 12,
+    marginTop: 12,
   },
   inputQuantidade: {
     width: 48,

@@ -11,45 +11,11 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
-  type ImageSourcePropType,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, type Href, useLocalSearchParams } from "expo-router";
 import { useFavoritos } from "../hooks/useFavoritos";
-
-type ItemSacola = {
-  id: string;
-  nome: string;
-  marca: string;
-  preco: number;
-  precoAntigo?: number;
-  tamanho: string;
-  imagem: ImageSourcePropType | string;
-  quantidade: number;
-};
-
-const produtosIniciais: ItemSacola[] = [
-  {
-    id: "1",
-    nome: "Colete Alfaiataria Risca de Giz Hudson",
-    marca: "Bellaver",
-    preco: 297,
-    precoAntigo: 389,
-    tamanho: "36",
-    imagem: require('../../assets/Img/ColeteAlfaiatariaRisca.png'),
-    quantidade: 1,
-  },
-  {
-    id: "2",
-    nome: "Conjunto Alfaiataria Off-White",
-    marca: "Bellaver",
-    preco: 697,
-    precoAntigo: 899,
-    tamanho: "40",
-    imagem: require('../../assets/Img/ConjuntoAlfaiatariaOff.png'),
-    quantidade: 1,
-  },
-];
+import { useSacola } from "../hooks/useSacola";
 
 const formatarPreco = (valor: number) =>
   valor.toLocaleString("pt-BR", {
@@ -59,12 +25,14 @@ const formatarPreco = (valor: number) =>
 
 export default function Sacola() {
   const { cupom: cupomRecebido } = useLocalSearchParams<{ cupom?: string }>();
-  const [itens, setItens] = useState<ItemSacola[]>(produtosIniciais);
   const [aba, setAba] = useState<"sacola" | "favoritos">("sacola");
-  const [cupom, setCupom] = useState("");
+  const [cupom, setCupom] = useState(
+    typeof cupomRecebido === "string" ? cupomRecebido : ""
+  );
   const [desconto, setDesconto] = useState(0);
   const [cupomAplicado, setCupomAplicado] = useState("");
   const { favoritos, alternarFavorito } = useFavoritos();
+  const { itens, carregando, alterarQuantidade, removerProduto } = useSacola();
 
   useEffect(() => {
     if (typeof cupomRecebido === "string") {
@@ -80,24 +48,39 @@ export default function Sacola() {
   const valorDesconto = subtotal * (desconto / 100);
   const total = subtotal - valorDesconto;
 
-  function alterarQuantidade(id: string, variacao: number) {
-    setItens((lista) =>
-      lista.map((item) =>
-        item.id === id
-          ? {
-            ...item,
-            quantidade: Math.max(
-              1,
-              item.quantidade + variacao
-            ),
-          }
-          : item
-      )
-    );
+  async function ajustarQuantidade(
+    produtoId: string,
+    tamanho: string,
+    quantidadeAtual: number,
+    variacao: number
+  ) {
+    try {
+      await alterarQuantidade(
+        produtoId,
+        tamanho,
+        Math.max(1, quantidadeAtual + variacao)
+      );
+    } catch (erro) {
+      Alert.alert(
+        "Quantidade indisponível",
+        erro instanceof Error
+          ? erro.message
+          : "Não foi possível atualizar a quantidade."
+      );
+    }
   }
 
-  function removerItem(id: string) {
-    setItens((lista) => lista.filter((item) => item.id !== id));
+  async function removerItem(produtoId: string, tamanho: string) {
+    try {
+      await removerProduto(produtoId, tamanho);
+    } catch (erro) {
+      Alert.alert(
+        "Erro ao remover produto",
+        erro instanceof Error
+          ? erro.message
+          : "Não foi possível remover este produto."
+      );
+    }
   }
 
   function aplicarCupom() {
@@ -133,16 +116,13 @@ export default function Sacola() {
       return;
     }
 
-    Alert.alert(
-      "Finalizar compra",
-      `Total do pedido: ${formatarPreco(total)}\n\nA próxima etapa será a integração com o checkout do Bellaver.`
-    );
+    router.push("/pagamento" as Href);
   }
 
   const listaExibida =
     aba === "sacola"
       ? itens
-      : itens.filter((item) => favoritos.includes(item.id));
+      : itens.filter((item) => favoritos.includes(item.produtoId));
 
   return (
     <SafeAreaView style={styles.tela}>
@@ -181,7 +161,7 @@ export default function Sacola() {
                 aba === "sacola" && styles.textoAbaAtiva,
               ]}
             >
-              SACOLA ({itens.length})
+              SACOLA ({itens.reduce((total, item) => total + item.quantidade, 0)})
             </Text>
           </TouchableOpacity>
 
@@ -190,7 +170,7 @@ export default function Sacola() {
               styles.aba,
               aba === "favoritos" && styles.abaAtiva,
             ]}
-            onPress={() => setAba("favoritos")}
+            onPress={() => router.replace("/favoritos")}
           >
             <Text
               style={[
@@ -208,7 +188,11 @@ export default function Sacola() {
           showsVerticalScrollIndicator={false}
         >
           {/* Produtos */}
-          {listaExibida.length === 0 ? (
+          {carregando && aba === "sacola" ? (
+            <View style={styles.vazio}>
+              <Text style={styles.textoVazio}>Carregando sua sacola...</Text>
+            </View>
+          ) : listaExibida.length === 0 ? (
             <View style={styles.vazio}>
               <Ionicons
                 name={
@@ -228,15 +212,15 @@ export default function Sacola() {
           ) : (
             listaExibida.map((item) => (
               <View style={styles.produto} key={item.id}>
-                <Image
-                  source={
-                    typeof item.imagem === 'string'
-                      ? { uri: item.imagem }
-                      : item.imagem
-                  }
-                  style={styles.imagemProduto}
-                  resizeMode="cover"
-                />
+                {item.imagem ? (
+                  <Image
+                    source={{ uri: item.imagem }}
+                    style={styles.imagemProduto}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={styles.imagemProduto} />
+                )}
 
                 <View style={styles.detalhes}>
                   <Text style={styles.nomeProduto}>
@@ -259,7 +243,12 @@ export default function Sacola() {
                         <TouchableOpacity
                           style={styles.botaoQuantidade}
                           onPress={() =>
-                            alterarQuantidade(item.id, -1)
+                            ajustarQuantidade(
+                              item.produtoId,
+                              item.tamanho,
+                              item.quantidade,
+                              -1
+                            )
                           }
                         >
                           <Text style={styles.textoQuantidade}>-</Text>
@@ -272,7 +261,12 @@ export default function Sacola() {
                         <TouchableOpacity
                           style={styles.botaoQuantidade}
                           onPress={() =>
-                            alterarQuantidade(item.id, 1)
+                            ajustarQuantidade(
+                              item.produtoId,
+                              item.tamanho,
+                              item.quantidade,
+                              1
+                            )
                           }
                         >
                           <Text style={styles.textoQuantidade}>+</Text>
@@ -280,20 +274,23 @@ export default function Sacola() {
                       </View>
 
                       <Text style={styles.tamanho}>
-                        Tamanho - {item.tamanho}
+                        {item.tamanho
+                          ? `Tamanho - ${item.tamanho}`
+                          : "Tamanho único"}
                       </Text>
                     </View>
                   ) : (
                     <TouchableOpacity
                       style={styles.adicionarFavorito}
-                      onPress={() => {
-                        setItens((lista) => [...lista, item]);
-                        alternarFavorito(item.id);
-                        setAba("sacola");
-                      }}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/produto2",
+                          params: { id: item.produtoId },
+                        })
+                      }
                     >
                       <Text style={styles.textoAdicionar}>
-                        ADICIONAR À SACOLA
+                        VER PRODUTO
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -303,8 +300,8 @@ export default function Sacola() {
                   style={styles.excluir}
                   onPress={() =>
                     aba === "sacola"
-                      ? removerItem(item.id)
-                      : alternarFavorito(item.id)
+                      ? removerItem(item.produtoId, item.tamanho)
+                      : alternarFavorito(item.produtoId)
                   }
                 >
                   <Ionicons
@@ -317,18 +314,18 @@ export default function Sacola() {
                 {aba === "sacola" && (
                   <TouchableOpacity
                     style={styles.coracao}
-                    onPress={() => alternarFavorito(item.id)}
+                    onPress={() => alternarFavorito(item.produtoId)}
                   >
                     <Ionicons
                       name={
-                        favoritos.includes(item.id)
+                        favoritos.includes(item.produtoId)
                           ? "heart"
                           : "heart-outline"
                       }
                       size={17}
                       color={
-                        favoritos.includes(item.id)
-                          ? "#A00000"
+                        favoritos.includes(item.produtoId)
+                          ? "#000000"
                           : "#888888"
                       }
                     />
@@ -392,7 +389,7 @@ export default function Sacola() {
 
                 <TouchableOpacity
                   style={styles.botaoCupom}
-                  onPress={aplicarCupom}
+                    onPress={() => router.push("/cuponsdedesconto")}
                 >
                   <Text style={styles.textoCupom}>APLICAR</Text>
                 </TouchableOpacity>

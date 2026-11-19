@@ -163,7 +163,7 @@ export default function CatalogoScreen() {
 
         {!isAdmin && (
           <TouchableOpacity
-            onPress={() => router.push('/pesquisar' as any)}
+            onPress={() => router.push('/pesquisa')}
           >
             <Ionicons
               name="search-outline"

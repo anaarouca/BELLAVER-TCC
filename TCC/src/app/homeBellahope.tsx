@@ -1,10 +1,12 @@
 
 import React from "react";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { SimpleLineIcons } from "@expo/vector-icons";
+import {
+  MaterialCommunityIcons,
+  SimpleLineIcons,
+  FontAwesome5,
+  Ionicons,
+} from "@expo/vector-icons";
 import Feather from "@expo/vector-icons/Feather";
-import { FontAwesome5 } from "@expo/vector-icons";
-import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
   Image,
@@ -209,6 +211,14 @@ export default function HomeBellahope() {
             </View>
           </View>
 
+          <Pressable
+            style={styles.mapaButton}
+            onPress={() => router.push("/mapa")}
+          >
+            <Text style={styles.mapaButtonText}>ENCONTRE ONGs</Text>
+            <Feather name="arrow-right" size={17} color="#ffffff" />
+          </Pressable>
+
           <View style={styles.actions}>
             <Text style={styles.actionTitle}>
               SUA ESCOLHA FAZ A DIFERENÇA.
@@ -254,7 +264,7 @@ export default function HomeBellahope() {
                       ? () => router.push("/doar")
                       : index === 3
                         ? () => router.push("/favoritos")
-                        : () => router.push("/perfil")
+                        : () => router.push("/telaperfil")
               }
               accessibilityRole="button"
               accessibilityLabel={item.label}
@@ -480,6 +490,22 @@ const styles = StyleSheet.create({
   },
   impactSection: {
     paddingTop: 25,
+  },
+  mapaButton: {
+    height: 46,
+    marginTop: 12,
+    marginHorizontal: 8,
+    paddingHorizontal: 17,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#050505",
+  },
+  mapaButtonText: {
+    color: "#ffffff",
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1,
   },
   impactSubtitle: {
     marginTop: 7,

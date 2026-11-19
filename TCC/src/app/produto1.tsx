@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -10,15 +10,20 @@ import {
   StatusBar,
   Alert,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useFavoritos } from '../hooks/useFavoritos';
+import { useSacola } from '../hooks/useSacola';
 
 export default function ProdutoScreen() {
   const [tamanho, setTamanho] = useState('36');
   const [quantidade, setQuantidade] = useState('1');
   const [imagemAtual, setImagemAtual] = useState(0);
+  const [salvandoSacola, setSalvandoSacola] = useState(false);
+  const enviandoParaSacola = useRef(false);
   const { favoritos, alternarFavorito } = useFavoritos();
+  const { adicionarProduto } = useSacola();
   const favorito = favoritos.includes('9');
 
   const tamanhos = ['36', '38', '40', '42'];
@@ -32,28 +37,60 @@ export default function ProdutoScreen() {
   const descricao =
     'Conjunto de três peças em alfaiataria premium. Blazer oversized estruturado, calça pantalona de cintura alta e camisa em tricotine acetinada Rose Quartz. Design de linhas precisas que une a sobriedade do cinza à energia da cor. O novo padrão da autoridade feminina.';
 
-  function adicionarSacola() {
+  async function adicionarAoCarrinho(): Promise<boolean> {
     if (!tamanho) {
       Alert.alert('Atenção', 'Selecione um tamanho.');
-      return;
+      return false;
     }
 
-    Alert.alert(
-      'Produto adicionado!',
-      `Tailleur Cinza & Rose Quartz\nTamanho: ${tamanho}\nQuantidade: ${quantidade}`
-    );
+    const quantidadeNumerica = Number(quantidade);
+    if (!Number.isInteger(quantidadeNumerica) || quantidadeNumerica < 1) {
+      Alert.alert('Quantidade inválida', 'Informe uma quantidade válida.');
+      return false;
+    }
+
+    if (enviandoParaSacola.current) {
+      return false;
+    }
+
+    enviandoParaSacola.current = true;
+    setSalvandoSacola(true);
+    try {
+      await adicionarProduto('9', tamanho, quantidadeNumerica, {
+        nome: 'Tailleur Cinza & Rose Quartz | Ana Paula Renault Edition',
+        preco: 'R$ 597,00',
+        precoAntigo: 'R$ 789,00',
+        imagem: '',
+        estoque: 0,
+      });
+      return true;
+    } catch (erro) {
+      Alert.alert(
+        'Produto indisponível',
+        erro instanceof Error
+          ? erro.message
+          : 'Não foi possível adicionar este produto à sacola.'
+      );
+      return false;
+    } finally {
+      enviandoParaSacola.current = false;
+      setSalvandoSacola(false);
+    }
   }
 
-  function comprarAgora() {
-    if (!tamanho) {
-      Alert.alert('Atenção', 'Selecione um tamanho.');
-      return;
+  async function adicionarSacola() {
+    if (await adicionarAoCarrinho()) {
+      router.push({
+        pathname: '/mensagem1',
+        params: { nome: 'Tailleur Cinza & Rose Quartz' },
+      });
     }
+  }
 
-    Alert.alert(
-      'Comprar agora',
-      `Produto: Tailleur Cinza & Rose Quartz\nTamanho: ${tamanho}\nQuantidade: ${quantidade}`
-    );
+  async function comprarAgora() {
+    if (await adicionarAoCarrinho()) {
+      router.push('/sacola');
+    }
   }
 
   function alterarQuantidade(valor: string) {
@@ -197,16 +234,24 @@ export default function ProdutoScreen() {
           style={styles.botaoPrincipal}
           onPress={adicionarSacola}
           activeOpacity={0.8}
+          disabled={salvandoSacola}
         >
-          <Text style={styles.textoBotao}>Adicionar à Sacola</Text>
+          {salvandoSacola ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.textoBotao}>Adicionar à Sacola</Text>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.botaoPrincipal}
           onPress={comprarAgora}
           activeOpacity={0.8}
+          disabled={salvandoSacola}
         >
-          <Text style={styles.textoBotao}>Comprar já</Text>
+          <Text style={styles.textoBotao}>
+            {salvandoSacola ? 'ADICIONANDO...' : 'Comprar já'}
+          </Text>
         </TouchableOpacity>
 
         {/* DESCRIÇÃO */}

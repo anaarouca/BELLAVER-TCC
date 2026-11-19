@@ -6,58 +6,79 @@ import {
   ScrollView,
   StyleSheet,
   StatusBar,
+  Alert,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import { salvarFiltrosPesquisa } from '../data/filtrosPesquisa';
 
 export default function Filtros() {
+  const { origem, tamanho, preco, categoria } = useLocalSearchParams<{
+    origem?: string;
+    tamanho?: string;
+    preco?: string;
+    categoria?: string;
+  }>();
   const [tamanhoSelecionado, setTamanhoSelecionado] = useState<string | null>(
-    null
+    typeof tamanho === 'string' && tamanho ? tamanho : null
   );
 
-  const [precoSelecionado, setPrecoSelecionado] = useState(2);
-
-  const [marcaSelecionada, setMarcaSelecionada] =
-    useState('Todas as Marcas');
+  const [precoSelecionado, setPrecoSelecionado] = useState<number | null>(
+    () => {
+      const indice = preco?.trim() ? Number(preco) : Number.NaN;
+      return Number.isInteger(indice) && indice >= 0 && indice <= 4
+        ? indice
+        : 2;
+    }
+  );
 
   const [categoriaSelecionada, setCategoriaSelecionada] =
-    useState('Todas as Categorias');
+    useState(
+      typeof categoria === 'string' && categoria
+        ? categoria
+        : 'Todas as Categorias'
+    );
 
-  const [menuMarcaAberto, setMenuMarcaAberto] = useState(false);
   const [menuCategoriaAberto, setMenuCategoriaAberto] = useState(false);
 
   const tamanhos = ['36', '38', '40', '42', '44'];
 
   const precos = ['R$ 0', 'R$ 125', 'R$ 250', 'R$ 375', 'R$ 500+'];
 
-  const marcas = [
-    'Todas as Marcas',
-    'Gucci',
-    'Prada',
-    'Dior',
-    'Chanel',
-    'Louis Vuitton',
-  ];
-
   const categorias = [
     'Todas as Categorias',
-    'Vestidos',
-    'Conjuntos',
-    'Casacos',
+    'Feminino',
+    'Masculino',
     'Calçados',
-    'Bolsas',
+    'Acessórios',
   ];
 
   const limparFiltros = () => {
     setTamanhoSelecionado(null);
-    setPrecoSelecionado(2);
-    setMarcaSelecionada('Todas as Marcas');
+    setPrecoSelecionado(null);
     setCategoriaSelecionada('Todas as Categorias');
-    setMenuMarcaAberto(false);
     setMenuCategoriaAberto(false);
   };
 
   const aplicarFiltros = () => {
-    // Adicione aqui a navegação ou a filtragem dos produtos.
+    void salvarFiltrosPesquisa({
+      tamanho: tamanhoSelecionado,
+      preco: precoSelecionado,
+      categoria: categoriaSelecionada,
+    })
+      .then(() => {
+        if (origem === 'pesquisa' && router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace('/pesquisa');
+        }
+      })
+      .catch((erro: unknown) => {
+        console.error('Erro ao salvar filtros de pesquisa:', erro);
+        Alert.alert(
+          'Não foi possível aplicar os filtros',
+          'Tente novamente.'
+        );
+      });
   };
 
   return (
@@ -96,7 +117,13 @@ export default function Filtros() {
         <View style={styles.tituloContainer}>
           <TouchableOpacity
             style={styles.botaoVoltar}
-            onPress={() => router.replace('/pesquisa')}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/pesquisa');
+              }
+            }}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="Voltar para pesquisa"
@@ -176,47 +203,6 @@ export default function Filtros() {
           </View>
         </View>
 
-        {/* MARCA */}
-        <View style={styles.secaoMarca}>
-          <Text style={styles.label}>Marca</Text>
-
-          <TouchableOpacity
-            style={styles.seletor}
-            activeOpacity={0.7}
-            onPress={() => {
-              setMenuMarcaAberto(!menuMarcaAberto);
-              setMenuCategoriaAberto(false);
-            }}
-          >
-            <Text style={styles.textoSeletor}>
-              {marcaSelecionada}
-            </Text>
-
-            <Text style={styles.setaSeletor}>
-              {menuMarcaAberto ? '⌃' : '⌄'}
-            </Text>
-          </TouchableOpacity>
-
-          {menuMarcaAberto && (
-            <View style={styles.opcoesDropdown}>
-              {marcas.map((marca) => (
-                <TouchableOpacity
-                  key={marca}
-                  style={styles.opcaoDropdown}
-                  onPress={() => {
-                    setMarcaSelecionada(marca);
-                    setMenuMarcaAberto(false);
-                  }}
-                >
-                  <Text style={styles.textoOpcao}>
-                    {marca}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-
         {/* CATEGORIA */}
         <View style={styles.secaoCategoria}>
           <Text style={styles.label}>Categoria</Text>
@@ -226,7 +212,6 @@ export default function Filtros() {
             activeOpacity={0.7}
             onPress={() => {
               setMenuCategoriaAberto(!menuCategoriaAberto);
-              setMenuMarcaAberto(false);
             }}
           >
             <Text style={styles.textoSeletor}>
@@ -481,14 +466,6 @@ const styles = StyleSheet.create({
 
   circuloPrecoSelecionado: {
     backgroundColor: '#000000',
-  },
-
-  // MARCA
-
-  secaoMarca: {
-    marginTop: 13,
-    marginHorizontal: 15,
-    zIndex: 2,
   },
 
   seletor: {

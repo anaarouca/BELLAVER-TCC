@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -18,9 +18,28 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { onAuthStateChanged, type User } from "firebase/auth";
-import { auth } from "../firebaseConfig";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { auth, db } from "../firebaseConfig";
 
 const PROFILE_STORAGE_KEY = "dadosPessoais";
+
+function ehErroPermissao(erro: unknown): boolean {
+  if (!erro || typeof erro !== "object") {
+    return false;
+  }
+
+  const codigo =
+    "code" in erro ? String((erro as { code?: string }).code) : "";
+  const mensagem =
+    "message" in erro ? String((erro as { message?: string }).message) : "";
+
+  return (
+    codigo === "permission-denied" ||
+    codigo === "PERMISSION_DENIED" ||
+    mensagem.toLowerCase().includes("permission") ||
+    mensagem.toLowerCase().includes("insufficient permissions")
+  );
+}
 
 export default function DadosPessoais() {
   const router = useRouter();
@@ -38,34 +57,67 @@ export default function DadosPessoais() {
   const [estado, setEstado] = useState("");
   const [foto, setFoto] = useState<string | null>(null);
 
-  useEffect(() => {
-    return onAuthStateChanged(auth, (usuario) => {
-      carregarDados(usuario);
-    });
-  }, []);
-
-  async function carregarDados(usuario: User | null) {
+  const carregarDados = useCallback(async (usuario: User | null) => {
     try {
       const chaveDoPerfil = usuario
         ? `${PROFILE_STORAGE_KEY}:${usuario.uid}`
         : PROFILE_STORAGE_KEY;
-      let dados = await AsyncStorage.getItem(chaveDoPerfil);
-      let informacoes = dados ? JSON.parse(dados) : {};
+      const dadosLocais = await AsyncStorage.getItem(chaveDoPerfil);
+      let informacoes = dadosLocais ? JSON.parse(dadosLocais) : {};
 
-      if (!dados && usuario?.email) {
-        const dadosLegados = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
-        const informacoesLegadas = dadosLegados
-          ? JSON.parse(dadosLegados)
-          : {};
+      if (usuario) {
+        const referencia = doc(db, "usuarios", usuario.uid);
+        let perfil;
 
-        if (
-          dadosLegados &&
-          usuario.email.toLowerCase() === informacoesLegadas.email?.toLowerCase()
-        ) {
-          dados = dadosLegados;
-          informacoes = informacoesLegadas;
-          await AsyncStorage.setItem(chaveDoPerfil, dados);
+        try {
+          perfil = await getDoc(referencia);
+        } catch (erro: unknown) {
+          if (!ehErroPermissao(erro)) {
+            throw erro;
+          }
+          perfil = null;
         }
+
+        if (perfil?.exists()) {
+          informacoes = {
+            ...perfil.data(),
+            foto: informacoes.foto || null,
+          };
+        } else if (usuario.email) {
+          const dadosLegados = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
+          const informacoesLegadas = dadosLegados
+            ? JSON.parse(dadosLegados)
+            : {};
+
+          if (
+            dadosLegados &&
+            typeof informacoesLegadas.email === "string" &&
+            usuario.email.toLowerCase() ===
+              informacoesLegadas.email.toLowerCase()
+          ) {
+            informacoes = informacoesLegadas;
+            const { foto: fotoLegada, ...perfilLegado } = informacoesLegadas;
+            try {
+              await setDoc(referencia, perfilLegado);
+            } catch (erro: unknown) {
+              if (!ehErroPermissao(erro)) {
+                throw erro;
+              }
+            }
+            if (typeof fotoLegada === "string") {
+              informacoes.foto = fotoLegada;
+            }
+            await AsyncStorage.setItem(
+              chaveDoPerfil,
+              JSON.stringify(informacoes)
+            );
+            await AsyncStorage.removeItem(PROFILE_STORAGE_KEY);
+          }
+        }
+      }
+
+      if (auth.currentUser?.uid !== usuario?.uid) {
+        return;
       }
 
       setNome(informacoes.nome || usuario?.displayName || "");
@@ -81,9 +133,16 @@ export default function DadosPessoais() {
       setEstado(informacoes.estado || "");
       setFoto(informacoes.foto || null);
     } catch (erro) {
+      console.error("Erro ao carregar dados pessoais:", erro);
       Alert.alert("Erro", "Não foi possível carregar os dados.");
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    return onAuthStateChanged(auth, (usuario) => {
+      void carregarDados(usuario);
+    });
+  }, [carregarDados]);
 
   async function selecionarFoto() {
     try {
@@ -108,6 +167,7 @@ export default function DadosPessoais() {
         setFoto(resultado.assets[0].uri);
       }
     } catch (erro) {
+      console.error("Erro ao selecionar foto do perfil:", erro);
       Alert.alert("Erro", "Não foi possível abrir suas fotos.");
     }
   }
@@ -128,6 +188,25 @@ export default function DadosPessoais() {
       return;
     }
 
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      Alert.alert("E-mail inválido", "Informe um endereço de e-mail válido.");
+      return;
+    }
+
+    const telefoneEmDigitos = telefone.replace(/\D/g, "");
+    if (telefoneEmDigitos.length < 10 || telefoneEmDigitos.length > 13) {
+      Alert.alert(
+        "Telefone inválido",
+        "Informe um telefone com DDD e número válidos."
+      );
+      return;
+    }
+
+    if (cep.replace(/\D/g, "").length !== 8) {
+      Alert.alert("CEP inválido", "Informe um CEP com 8 dígitos.");
+      return;
+    }
+
     const dados = {
       nome,
       email,
@@ -144,15 +223,54 @@ export default function DadosPessoais() {
     };
 
     try {
-      await AsyncStorage.setItem(
-        auth.currentUser
-          ? `${PROFILE_STORAGE_KEY}:${auth.currentUser.uid}`
-          : PROFILE_STORAGE_KEY,
-        JSON.stringify(dados)
-      );
+      const usuario = auth.currentUser;
+      const chaveDoPerfil = usuario
+        ? `${PROFILE_STORAGE_KEY}:${usuario.uid}`
+        : PROFILE_STORAGE_KEY;
+
+      if (usuario) {
+        try {
+          await setDoc(
+            doc(db, "usuarios", usuario.uid),
+            {
+              nome: dados.nome,
+              email: dados.email,
+              telefone: dados.telefone,
+              nomeEndereco: dados.nomeEndereco,
+              cep: dados.cep,
+              rua: dados.rua,
+              numero: dados.numero,
+              complemento: dados.complemento,
+              bairro: dados.bairro,
+              cidade: dados.cidade,
+              estado: dados.estado,
+            },
+            { merge: true }
+          );
+        } catch (erro: unknown) {
+          if (!ehErroPermissao(erro)) {
+            throw erro;
+          }
+        }
+      }
+
+      try {
+        await AsyncStorage.setItem(chaveDoPerfil, JSON.stringify(dados));
+      } catch (erroLocal) {
+        console.error("Erro ao atualizar o cache local do perfil:", erroLocal);
+        if (usuario) {
+          Alert.alert(
+            "Dados salvos",
+            "Seus dados foram salvos na conta, mas a foto local não pôde ser atualizada."
+          );
+          return;
+        }
+        throw erroLocal;
+      }
 
       Alert.alert("Sucesso", "Seus dados foram salvos!");
     } catch (erro) {
+      console.error("Erro ao salvar dados pessoais:", erro);
       Alert.alert("Erro", "Não foi possível salvar os dados.");
     }
   }
@@ -223,7 +341,7 @@ export default function DadosPessoais() {
           {/* SUBTÍTULO */}
 
           <Text style={styles.subtitulo}>
-            PAINEL DO ADMINISTRADOR
+            DADOS PESSOAIS
           </Text>
 
           {/* FOTO */}
