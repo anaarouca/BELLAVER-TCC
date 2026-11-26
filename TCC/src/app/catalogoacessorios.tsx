@@ -152,7 +152,10 @@ export default function Catalogo() {
                 >
                   <Image
                     source={produto.imagem}
-                    style={styles.imagem}
+                    style={[
+                      styles.imagem,
+                      { filter: 'grayscale(100%)' } as any,
+                    ]}
                     resizeMode="cover"
                   />
                 </TouchableOpacity>

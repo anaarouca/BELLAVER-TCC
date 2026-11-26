@@ -148,7 +148,10 @@ export default function CatalogoCalcadosScreen() {
 									>
 										<Image
 											source={produto.imagem}
-											style={styles.imagemProduto}
+										style={[
+											styles.imagemProduto,
+											{ filter: 'grayscale(100%)' } as any,
+										]}
 											resizeMode="cover"
 										/>
 									</TouchableOpacity>
